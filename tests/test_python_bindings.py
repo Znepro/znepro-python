@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 
 import znepro
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from znepro import (
     ZNEProClient,
     auto_extract_calibration,
@@ -17,7 +19,11 @@ from znepro import (
     extract_from_cirq,
     extract_from_pytket,
     extract_from_qiskit,
+    open_envelope,
+    seal_envelope,
 )
+
+_TICKET_KEY = "11" * 32
 
 
 def _hidden_flag() -> str:
@@ -339,14 +345,39 @@ def _header_map(headers: dict) -> dict[str, str]:
     return {str(key).lower(): str(value) for key, value in headers.items()}
 
 
+def test_seal_envelope_matches_nist_aesgcm_and_rejects_a_flipped_byte():
+    key = bytes(range(32))
+    nonce = b"0123456789ab"
+    plain = b'{"backend_name":"superconducting","qasm":"OPENQASM 2.0;","shots":{"0":1}}'
+    sealed = seal_envelope(plain, key, nonce=nonce)
+    assert sealed == nonce + AESGCM(key).encrypt(nonce, plain, None)
+    assert open_envelope(sealed, key.hex()) == plain
+    assert open_envelope(sealed, key) == plain
+    flipped_tag = bytearray(sealed)
+    flipped_tag[-1] ^= 0x01
+    with pytest.raises(InvalidTag):
+        open_envelope(bytes(flipped_tag), key)
+    flipped_body = bytearray(sealed)
+    flipped_body[12] ^= 0x01
+    with pytest.raises(InvalidTag):
+        open_envelope(bytes(flipped_body), key)
+    with pytest.raises(ValueError):
+        seal_envelope(plain, b"short")
+    with pytest.raises(ValueError):
+        open_envelope(b"x" * 27, key)
+
+
 def test_submit_job_scopes_bearer_token_to_api_origin():
     put_url = "https://example-r2.cloudflarestorage.com/bucket/in?X-Amz-Signature=putsig"
     get_url = "https://example-r2.cloudflarestorage.com/bucket/out?X-Amz-Signature=getsig"
     seen: list[tuple[str, str, dict[str, str], bytes | None]] = []
+    put_attempts = {"n": 0}
 
     def transport(method, url, body, headers, timeout_s):  # noqa: ARG001
         seen.append((method, url, _header_map(headers), body))
         if method == "POST" and url.endswith("/api/v1/client/tasks/init"):
+            sent = json.loads(body)
+            assert sent["hardware_backend"] == "superconducting"
             return 200, json.dumps(
                 {
                     "task_id": "task-unit-1",
@@ -354,11 +385,16 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
                     "r2_key": "tasks/0123456789abcdef/00000000-0000-0000-0000-000000000001/input.zk",
                     "upload_presigned_url": put_url,
                     "output_presigned_url": get_url,
+                    "encryption_key_hex": _TICKET_KEY,
                 }
             ).encode()
         if method == "PUT" and url == put_url:
             assert body is not None
-            uploaded = json.loads(body)
+            put_attempts["n"] += 1
+            if put_attempts["n"] == 1:
+                return 403, b"retry"
+            uploaded = json.loads(open_envelope(body, _TICKET_KEY))
+            assert uploaded["backend_name"] == "superconducting"
             assert "hardware_calibration" not in uploaded
             assert "hardware_scales" not in uploaded
             return 200, b""
@@ -371,7 +407,7 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
                 "mitigated_expectation": 0.91,
                 "unmitigated_expectation": 0.75,
             }
-            return 200, json.dumps(receipt).encode()
+            return 200, seal_envelope(json.dumps(receipt).encode(), _TICKET_KEY, nonce=b"0123456789ab")
         raise AssertionError(f"unexpected request {method} {url}")
 
     client = ZNEProClient(api_key="test", transport=transport)
@@ -397,12 +433,66 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
         ]
         if url.startswith("https://api.znepro.com/"):
             assert headers.get("authorization") == "Bearer test"
+            assert headers.get("accept") == "application/json"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.0"
+            assert "python-urllib" not in headers["user-agent"].lower()
             assert credential_names == ["authorization"]
         else:
             assert "cloudflarestorage.com" in url
             assert method in {"PUT", "GET"}
             assert credential_names == []
+            assert headers.get("user-agent") == "znepro-sdk/1.0.0"
             assert "X-Amz-Signature" in url
+    puts = [(headers, body) for method, url, headers, body in seen if method == "PUT"]
+    assert len(puts) == 2
+    assert "content-type" not in puts[0][0]
+    assert puts[1][0].get("content-type") == "application/octet-stream"
+    assert puts[0][1] == puts[1][1]
+
+
+def test_failed_receipt_raises_without_another_poll():
+    put_url = "https://example-r2.cloudflarestorage.com/bucket/in?X-Amz-Signature=putsig"
+    get_url = "https://example-r2.cloudflarestorage.com/bucket/out?X-Amz-Signature=getsig"
+    gets = {"n": 0}
+
+    def transport(method, url, body, headers, timeout_s):  # noqa: ARG001
+        if method == "POST" and url.endswith("/api/v1/client/tasks/init"):
+            return 200, json.dumps(
+                {
+                    "task_id": "task-fail",
+                    "upload_presigned_url": put_url,
+                    "output_presigned_url": get_url,
+                    "encryption_key_hex": _TICKET_KEY,
+                }
+            ).encode()
+        if method == "PUT":
+            return 200, b""
+        if method == "POST" and url.endswith("/api/v1/client/tasks/commit"):
+            return 200, json.dumps({"status": "QUEUED"}).encode()
+        if method == "GET" and url == get_url:
+            gets["n"] += 1
+            receipt = {"status": "FAILED", "error": "task artifact authentication failed"}
+            return 200, seal_envelope(json.dumps(receipt).encode(), _TICKET_KEY)
+        raise AssertionError(f"unexpected request {method} {url}")
+
+    client = ZNEProClient(api_key="test", transport=transport, timeout_s=5)
+    with pytest.raises(RuntimeError, match="task artifact authentication failed"):
+        client.submit_job(
+            "OPENQASM 2.0;\nqreg q[1];\n",
+            {"0": 1},
+            observable="Z",
+            poll_interval_s=0.01,
+            timeout_s=2,
+        )
+    assert gets["n"] == 1
+
+
+def test_plain_json_receipt_is_accepted_only_without_a_key():
+    client = ZNEProClient(api_key="test", transport=lambda *args: (200, b""), timeout_s=1)
+    plain = json.dumps({"status": "COMPLETED", "mitigated_expectation": 0.2}).encode()
+    assert client._receipt_document(plain, None)["mitigated_expectation"] == 0.2
+    with pytest.raises(InvalidTag):
+        client._receipt_document(plain, _TICKET_KEY)
 
 
 def test_compiled_extension_binary_has_no_proprietary_tokens():

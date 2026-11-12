@@ -18,10 +18,14 @@ from znepro._bridge import (
     pytket_object_to_json,
     qiskit_object_to_json,
 )
+from znepro._envelope import open_envelope, seal_envelope
 
 HardwareCalibration = _core.HardwareCalibration
 
+__version__ = "1.0.0"
 DEFAULT_BASE_URL = "https://api.znepro.com"
+USER_AGENT = f"znepro-sdk/{__version__}"
+_TERMINAL_FAILURES = {"FAILED", "ERROR", "TASK_FAILED", "TASK_ERROR"}
 PATH_CLIENT_TASK_INIT = "/api/v1/client/tasks/init"
 PATH_CLIENT_TASK_COMMIT = "/api/v1/client/tasks/commit"
 PATH_TASKS = "/v1/tasks"
@@ -161,16 +165,45 @@ def _default_transport(
     headers: dict[str, str],
     timeout_s: float,
 ) -> tuple[int, bytes]:
+    if timeout_s <= 0:
+        raise ValueError("timeout must be positive")
     request = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(request, timeout=timeout_s) as response:
+        with urllib.request.urlopen(request, timeout=30.0) as response:
             return int(response.status), response.read()
     except urllib.error.HTTPError as exc:
         return int(exc.code), exc.read()
 
 
+def _ticket_text(ticket: Mapping[str, Any], names: tuple[str, ...]) -> str | None:
+    for name in names:
+        value = ticket.get(name)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def canonical_job_bytes(payload_json: str) -> bytes:
+    """Compact sorted JSON. Missing ``backend_name`` becomes ``superconducting``."""
+    document = json.loads(payload_json)
+    if not isinstance(document, dict):
+        raise ValueError("job payload must be a JSON object")
+    if not document.get("backend_name"):
+        document["backend_name"] = "superconducting"
+    text = json.dumps(document, separators=(",", ":"), sort_keys=True, allow_nan=False)
+    return text.encode("utf-8")
+
+
+def _raise_if_terminal_failure(document: Mapping[str, Any]) -> None:
+    status = str(document.get("status") or document.get("kind") or "").upper()
+    if status not in _TERMINAL_FAILURES:
+        return
+    message = document.get("error") or document.get("message") or status
+    raise RuntimeError(f"ZNEPro task failed: {message}")
+
+
 class ZNEProClient:
-    """Zero-dependency HTTP client for the public ZNEPro R2 ticket API."""
+    """HTTP client for the public ZNEPro R2 ticket API."""
 
     def __init__(
         self,
@@ -186,11 +219,13 @@ class ZNEProClient:
 
     def _headers_for(self, url: str, extra: Mapping[str, str] | None = None) -> dict[str, str]:
         if _credentials_allowed(self.base_url, url):
-            headers = {"accept": "application/json"}
+            headers: dict[str, str] = {}
             if extra:
                 headers.update(dict(extra))
+            headers["Accept"] = "application/json"
+            headers["User-Agent"] = USER_AGENT
             if self.api_key:
-                headers["authorization"] = f"Bearer {self.api_key}"
+                headers["Authorization"] = f"Bearer {self.api_key}"
             return headers
         return _storage_headers(extra)
 
@@ -328,9 +363,10 @@ class ZNEProClient:
         hardware_backend: str | None = None,
     ) -> dict[str, Any]:
         """`POST /api/v1/client/tasks/init` — mint task id, key, and presigned PUT URL."""
-        body = {"target_observable": target_observable}
-        if hardware_backend:
-            body["hardware_backend"] = hardware_backend
+        body = {
+            "target_observable": target_observable,
+            "hardware_backend": hardware_backend or "superconducting",
+        }
         status, raw = self._request(
             "POST",
             PATH_CLIENT_TASK_INIT,
@@ -347,15 +383,27 @@ class ZNEProClient:
         payload_json: str,
         encryption_key_hex: str | None = None,
     ) -> int:
-        """PUT the job JSON to the presigned URL. The body is not encrypted."""
-        _ = encryption_key_hex
+        """PUT a NIST AES-256-GCM envelope. The API bearer is not attached."""
+        if not encryption_key_hex:
+            raise ValueError("encryption key is required")
+        blob = seal_envelope(canonical_job_bytes(payload_json), encryption_key_hex)
+        headers = {"User-Agent": USER_AGENT}
         status, raw = self._request(
             "PUT",
             upload_presigned_url,
-            body=payload_json.encode("utf-8"),
-            headers={"content-type": "application/json"},
+            body=blob,
+            headers=headers,
             absolute=True,
         )
+        if status in (400, 403):
+            headers = {"User-Agent": USER_AGENT, "Content-Type": "application/octet-stream"}
+            status, raw = self._request(
+                "PUT",
+                upload_presigned_url,
+                body=blob,
+                headers=headers,
+                absolute=True,
+            )
         if status not in (200, 201, 204):
             raise RuntimeError(
                 f"ZNEPro R2 PUT HTTP {status}: {raw.decode('utf-8', errors='replace')}"
@@ -384,8 +432,7 @@ class ZNEProClient:
         poll_interval_s: float = 1.0,
         max_wait_s: float = 120.0,
     ) -> dict[str, Any]:
-        """Poll the result object (preferred) or `GET /v1/tasks/{task_id}`."""
-        _ = encryption_key_hex
+        """Poll the sealed result object, or `GET /v1/tasks/{task_id}`."""
         deadline = time.monotonic() + max_wait_s
         interval = max(0.1, float(poll_interval_s))
         last_error = "ticket result was not ready"
@@ -394,6 +441,7 @@ class ZNEProClient:
                 status, raw = self._request(
                     "GET",
                     output_presigned_url,
+                    headers={"User-Agent": USER_AGENT},
                     absolute=True,
                 )
                 if status in (502, 503, 429):
@@ -402,15 +450,16 @@ class ZNEProClient:
                     continue
                 if status == 200 and raw:
                     try:
-                        document = json.loads(raw.decode("utf-8"))
-                    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                        document = self._receipt_document(raw, encryption_key_hex)
+                    except json.JSONDecodeError as exc:
                         last_error = str(exc)
                     else:
-                        if isinstance(document, dict):
+                        if document is not None:
+                            _raise_if_terminal_failure(document)
                             return document
+                        last_error = "receipt is not an object"
                 elif status not in (404, 403, 401):
                     last_error = f"R2 GET HTTP {status}"
-            # Fallback: public task status JSON (may include a fresh get_url).
             status, raw = self._request("GET", f"{PATH_TASKS}/{task_id}")
             if status in (502, 503, 429):
                 time.sleep(interval)
@@ -422,17 +471,29 @@ class ZNEProClient:
                 except json.JSONDecodeError as exc:
                     last_error = str(exc)
                 else:
-                    kind = str(view.get("kind") or view.get("status") or "")
-                    if kind in {"TASK_COMPLETED", "COMPLETED"} and view.get("mitigated_expectation") is not None:
-                        return view
-                    if kind in {"TASK_FAILED", "FAILED"}:
-                        raise RuntimeError(f"ZNEPro task failed: {view}")
-                    fresh = view.get("get_url")
-                    if isinstance(fresh, str) and fresh and fresh != output_presigned_url:
-                        output_presigned_url = fresh
+                    if isinstance(view, dict):
+                        _raise_if_terminal_failure(view)
+                        kind = str(view.get("kind") or view.get("status") or "")
+                        if kind in {"TASK_COMPLETED", "COMPLETED"} and view.get("mitigated_expectation") is not None:
+                            return view
+                        fresh = view.get("get_url") or view.get("output_presigned_url") or view.get("download_url")
+                        if isinstance(fresh, str) and fresh and fresh != output_presigned_url:
+                            output_presigned_url = fresh
             time.sleep(interval)
             interval = min(interval * 1.25, 8.0)
         raise TimeoutError(f"ZNEPro ticket poll timed out after {max_wait_s}s: {last_error}")
+
+    @staticmethod
+    def _receipt_document(raw: bytes, encryption_key_hex: str | None) -> dict[str, Any] | None:
+        """Open a sealed receipt. Plain JSON is accepted only when no key is set."""
+        if encryption_key_hex:
+            plain = open_envelope(raw, encryption_key_hex)
+            document = json.loads(plain.decode("utf-8"))
+        else:
+            document = json.loads(raw.decode("utf-8"))
+        if isinstance(document, dict):
+            return document
+        return None
 
     def submit_and_wait(
         self,
@@ -443,17 +504,28 @@ class ZNEProClient:
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
     ) -> dict[str, Any]:
-        """Full R2 ticket lifecycle: init → PUT job JSON → commit → poll result."""
+        """Full R2 ticket lifecycle: init → PUT sealed job → commit → poll result."""
         wait = self.timeout_s if timeout_s is None else float(timeout_s)
         ticket = self.create_ticket(observable, hardware_backend=hardware_backend)
-        self.upload_payload(str(ticket["upload_presigned_url"]), payload_json)
-        commit = self.commit_ticket(str(ticket["task_id"]))
-        if str(commit.get("status", "")).upper() not in {"QUEUED", "COMPLETED", "OK"}:
-            # Still attempt to poll; some deployments return alternate status strings.
-            pass
+        upload_url = _ticket_text(ticket, ("upload_presigned_url", "upload_url", "put_url"))
+        download_url = _ticket_text(
+            ticket,
+            ("output_presigned_url", "download_url", "get_url"),
+        )
+        key = _ticket_text(ticket, ("encryption_key_hex", "decryption_key", "one_time_key"))
+        task_id = ticket.get("task_id")
+        if not upload_url or not isinstance(task_id, str) or not task_id or not key:
+            raise RuntimeError("init did not return an R2 ticket")
+        self.upload_payload(upload_url, payload_json, encryption_key_hex=key)
+        commit = self.commit_ticket(task_id)
+        commit_status = str(commit.get("status") or "").upper()
+        if commit_status in _TERMINAL_FAILURES:
+            message = commit.get("error") or commit.get("message") or commit_status
+            raise RuntimeError(f"ZNEPro task failed: {message}")
         return self.poll_ticket(
-            task_id=str(ticket["task_id"]),
-            output_presigned_url=ticket.get("output_presigned_url"),
+            task_id=task_id,
+            output_presigned_url=download_url,
+            encryption_key_hex=key,
             poll_interval_s=poll_interval_s,
             max_wait_s=wait,
         )
@@ -549,6 +621,7 @@ class ZNEProClient:
 
 __all__ = [
     "DEFAULT_BASE_URL",
+    "USER_AGENT",
     "HardwareCalibration",
     "PATH_CLIENT_TASK_COMMIT",
     "PATH_CLIENT_TASK_INIT",
@@ -556,8 +629,12 @@ __all__ = [
     "ZNEProClient",
     "auto_extract_calibration",
     "build_neutral_atom_calibration",
+    "canonical_job_bytes",
     "extract_from_braket",
     "extract_from_cirq",
     "extract_from_pytket",
     "extract_from_qiskit",
+    "open_envelope",
+    "seal_envelope",
+    "__version__",
 ]

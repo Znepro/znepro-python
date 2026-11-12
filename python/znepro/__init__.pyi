@@ -1,7 +1,17 @@
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
+__version__: str
 DEFAULT_BASE_URL: str
+USER_AGENT: str
+
+def seal_envelope(
+    plaintext_bytes: bytes,
+    key_hex_or_b64: str | bytes,
+    nonce: bytes | None = None,
+) -> bytes: ...
+def open_envelope(blob: bytes, key_hex_or_b64: str | bytes) -> bytes: ...
+def canonical_job_bytes(payload_json: str) -> bytes: ...
 PATH_CLIENT_TASK_INIT: str
 PATH_CLIENT_TASK_COMMIT: str
 PATH_TASKS: str

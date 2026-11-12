@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import json
 
-from znepro import PATH_CLIENT_TASK_COMMIT, PATH_CLIENT_TASK_INIT, ZNEProClient
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+from znepro import PATH_CLIENT_TASK_COMMIT, PATH_CLIENT_TASK_INIT, ZNEProClient, open_envelope, seal_envelope
+
+_TICKET_KEY = "ab" * 32
 
 
 def test_single_run_payload_omits_calibration_and_scales() -> None:
@@ -22,6 +27,22 @@ def test_single_run_payload_omits_calibration_and_scales() -> None:
     assert sum(body["shots"].values()) == 4000
 
 
+def test_seal_round_trip_matches_aesgcm() -> None:
+    key = bytes(range(32))
+    nonce = b"abcdefghijkl"
+    plain = b'{"qasm":"OPENQASM 2.0;","shots":{"0":1}}'
+    sealed = seal_envelope(plain, key.hex(), nonce=nonce)
+    assert sealed == nonce + AESGCM(key).encrypt(nonce, plain, None)
+    assert open_envelope(sealed, key) == plain
+    damaged = bytearray(sealed)
+    damaged[-1] ^= 0xFF
+    try:
+        open_envelope(bytes(damaged), key)
+    except InvalidTag:
+        return
+    raise AssertionError("flipped tag was accepted")
+
+
 def test_ticket_routes_round_trip_with_a_fake_transport() -> None:
     calls: list[str] = []
     put_url = "https://example-r2.cloudflarestorage.com/bucket/in?X-Amz-Signature=putsig"
@@ -37,11 +58,15 @@ def test_ticket_routes_round_trip_with_a_fake_transport() -> None:
                 "task_id": "task-demo",
                 "upload_presigned_url": put_url,
                 "output_presigned_url": get_url,
+                "encryption_key_hex": _TICKET_KEY,
             }).encode()
         if url == put_url:
             assert "authorization" not in lowered
-            uploaded = json.loads(body)
+            assert lowered.get("user-agent") == "znepro-sdk/1.0.0"
+            assert "content-type" not in lowered
+            uploaded = json.loads(open_envelope(body, _TICKET_KEY))
             assert uploaded["shots"]["0"] == 3000
+            assert uploaded["backend_name"] == "superconducting"
             return 200, b""
         if url.endswith(PATH_CLIENT_TASK_COMMIT):
             assert lowered["authorization"] == "Bearer test-key"
@@ -55,7 +80,7 @@ def test_ticket_routes_round_trip_with_a_fake_transport() -> None:
                 "task_id": "task-demo",
                 "metrics": {"mitigated_expectation": 0.5, "unmitigated_expectation": 0.4},
             }).encode()
-            return 200, receipt
+            return 200, seal_envelope(receipt, _TICKET_KEY, nonce=b"0123456789ab")
         raise AssertionError(url)
 
     client = ZNEProClient(api_key="test-key", transport=transport, timeout_s=5)
