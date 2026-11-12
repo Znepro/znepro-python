@@ -1,0 +1,26 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "znepro"
+version = "1.0.0"
+description = "Official Python client and multi-hardware calibration SDK for ZNEPro"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = []
+
+[project.optional-dependencies]
+qiskit = ["qiskit>=1.0"]
+braket = ["amazon-braket-sdk>=1.70"]
+cirq = ["cirq-core>=1.3"]
+pytket = ["pytket>=1.25"]
+dev = ["pytest>=8.0", "maturin>=1.5", "qiskit>=1.0", "cryptography>=42"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "znepro._core"
+features = ["extension-module"]
+strip = true
+exclude = ["tests/**", "py_tests/**"]

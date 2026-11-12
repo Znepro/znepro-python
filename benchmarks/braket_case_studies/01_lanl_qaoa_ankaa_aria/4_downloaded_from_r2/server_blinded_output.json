@@ -1,0 +1,17 @@
+{
+  "backend_name": "superconducting",
+  "execution_time_ms": 0,
+  "job_id": "task-08d910e9-020b-496d-9cc6-f883378400a5",
+  "metrics": {
+    "calibrated_expectation": 0.5140808942199051,
+    "mitigated_expectation": 0.5140808942199051,
+    "mitigation_factor": 1.5120026300585443,
+    "mitigation_method": "znepro",
+    "raw_hardware_expectation": 0.34,
+    "unmitigated_expectation": 0.34
+  },
+  "status": "COMPLETED",
+  "target_observable": "Z3 Z0",
+  "task_id": "task-08d910e9-020b-496d-9cc6-f883378400a5",
+  "total_shots": 1000
+}

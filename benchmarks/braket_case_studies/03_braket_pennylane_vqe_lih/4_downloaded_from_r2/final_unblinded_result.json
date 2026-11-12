@@ -1,0 +1,15 @@
+{
+  "error_reduction_factor": 1.6143042483603705,
+  "ideal": -8.01642,
+  "identity_offset": -4.15,
+  "mitigated_absolute_error": 0.7411366235424266,
+  "quantity": "active-space energy (Ha)",
+  "raw_absolute_error": 1.1964199999999998,
+  "raw_qpu_lambda_1": -6.82,
+  "server_mitigated_expectation": 3.125283376457573,
+  "server_visible_scale_0": 2.67,
+  "sign_mask": -1,
+  "task_id": "task-70cd12e4-81c0-45c8-a1d7-db616e7cf6ad",
+  "unblinded_mitigated_expectation": -7.2752833764575735,
+  "wire_observable": "Z2 Z0"
+}

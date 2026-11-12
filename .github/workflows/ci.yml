@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Rust tests
+        run: cargo test
+      - name: Rust tests with Python bindings
+        run: cargo test --features python
+      - name: Python extension in a virtualenv
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install maturin pytest qiskit cryptography
+          .venv/bin/maturin develop --release
+      - name: Python tests and leak scan
+        run: .venv/bin/pytest tests/ -v

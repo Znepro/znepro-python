@@ -1,0 +1,17 @@
+{
+  "backend_name": "neutral_atom",
+  "execution_time_ms": 0,
+  "job_id": "task-c0a2ec2b-58e1-469e-85fc-316b0f874626",
+  "metrics": {
+    "calibrated_expectation": -0.937873442852032,
+    "mitigated_expectation": -0.937873442852032,
+    "mitigation_factor": 1.2340440037526736,
+    "mitigation_method": "znepro",
+    "raw_hardware_expectation": -0.76,
+    "unmitigated_expectation": -0.76
+  },
+  "status": "COMPLETED",
+  "target_observable": "Z4 Z7",
+  "task_id": "task-c0a2ec2b-58e1-469e-85fc-316b0f874626",
+  "total_shots": 1000
+}

@@ -1,0 +1,24 @@
+{
+  "backend_name": "superconducting",
+  "hardware_scales": [
+    {
+      "expectation": 0.34,
+      "lambda": 1.0
+    },
+    {
+      "expectation": 0.255,
+      "lambda": 1.5
+    },
+    {
+      "expectation": 0.191,
+      "lambda": 2.0
+    }
+  ],
+  "qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[6];\ncreg c[2];\nrx(0.85) q[3];\nrx(0.85) q[0];\nrx(0.85) q[5];\nrx(0.85) q[1];\nrx(0.85) q[4];\nrx(0.85) q[2];\nrz(-0.40) q[3];\nrz(-0.40) q[0];\nrz(-0.40) q[5];\nrz(-0.40) q[1];\nrz(-0.40) q[4];\nrz(-0.40) q[2];\ncz q[3], q[1];\ncz q[3], q[4];\ncz q[3], q[2];\ncz q[0], q[1];\ncz q[0], q[4];\ncz q[0], q[2];\ncz q[5], q[1];\ncz q[5], q[4];\ncz q[5], q[2];\nrx(1.15) q[3];\nrx(1.15) q[0];\nrx(1.15) q[5];\nrx(1.15) q[1];\nrx(1.15) q[4];\nrx(1.15) q[2];\nmeasure q[3] -> c[0];\nmeasure q[0] -> c[1];\n",
+  "shots": {
+    "000000": 335,
+    "000001": 0,
+    "001000": 330,
+    "001001": 335
+  }
+}

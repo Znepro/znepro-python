@@ -1,0 +1,15 @@
+{
+  "error_reduction_factor": 9.038911867875811,
+  "ideal": 0.96,
+  "local_rescaled_site_count": 256,
+  "mitigated_absolute_error": 0.022126557147967962,
+  "quantity": "Z2 order",
+  "raw_absolute_error": 0.19999999999999996,
+  "raw_qpu_lambda_1": 0.76,
+  "server_mitigated_expectation": -0.937873442852032,
+  "server_visible_scale_0": -0.76,
+  "sign_mask": -1,
+  "task_id": "task-c0a2ec2b-58e1-469e-85fc-316b0f874626",
+  "unblinded_mitigated_expectation": 0.937873442852032,
+  "wire_observable": "Z4 Z7"
+}

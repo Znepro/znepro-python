@@ -1,0 +1,35 @@
+# Secrets and local environments
+.env
+.env.*
+!.env.example
+
+# Private evaluation vaults. These stay on disk and must never be committed.
+ZNEPro_Physics_Test/
+ZNEPro_Blind_Test/
+ZNEPro_Live_AB_Test/
+M3_Comparison/
+**/private_truth.json
+**/*znepro_service_answers*
+
+# Superseded local copies kept on disk after the public layout move
+/BENCHMARK_REPORT.md
+/results.json
+/requirements.txt
+/run_arxiv_qiskit_benchmarks.py
+/test_customer_suite.py
+/test_no_backend_ip_leak.py
+/scripts/
+/braket_case_studies/
+
+# Build and tool output
+/target/
+/Cargo.lock
+/dist/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+.venv/
+python/znepro/_core*.so
+python/znepro/_core*.dylib
+python/znepro/_core*.pyd
+.DS_Store

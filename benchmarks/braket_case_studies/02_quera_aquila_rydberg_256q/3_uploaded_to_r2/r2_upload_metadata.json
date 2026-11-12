@@ -1,0 +1,17 @@
+{
+  "blinded_plaintext_sha256": "89cea1a3313d89039079a9021ba676cbea7a51e96af9de18496ed1651055bdff",
+  "commit_status": "QUEUED",
+  "get_http_status": 200,
+  "input_bytes": 553,
+  "input_object_url": "https://r2.cloudflarestorage.com/znepro-artifacts/tasks/8d93d5320106d58f/c0a2ec2b-58e1-469e-85fc-316b0f874626/input.zk",
+  "input_sha256": "f29fab0c63736acf5ca7fd1cb41139617b839717257758189eb2ef8e703cadda",
+  "output_bytes": 488,
+  "output_object_url": "https://r2.cloudflarestorage.com/znepro-artifacts/tasks/8d93d5320106d58f/c0a2ec2b-58e1-469e-85fc-316b0f874626/output.zk",
+  "output_sha256": "53bec0a65805ee33064b3e7001bdcb4698d08b08d56a7fa03acbd1411c3d1b22",
+  "put_http_status": 200,
+  "r2_host": "r2.cloudflarestorage.com",
+  "r2_key": "tasks/8d93d5320106d58f/c0a2ec2b-58e1-469e-85fc-316b0f874626/input.zk",
+  "sign_mask": -1,
+  "task_id": "task-c0a2ec2b-58e1-469e-85fc-316b0f874626",
+  "wire_observable": "Z4 Z7"
+}

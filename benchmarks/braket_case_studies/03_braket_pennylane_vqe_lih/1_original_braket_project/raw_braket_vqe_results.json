@@ -1,0 +1,26 @@
+{
+  "bond_angstrom": 1.6,
+  "braket_qpu": {
+    "noise_scales": [
+      {
+        "energy_ha": -6.82,
+        "lambda": 1.0
+      },
+      {
+        "energy_ha": -6.295,
+        "lambda": 1.5
+      },
+      {
+        "energy_ha": -5.81,
+        "lambda": 2.0
+      }
+    ]
+  },
+  "exact_active_space_ha": -8.01642,
+  "mapping": "parity, STO-3G active space, 4 qubits",
+  "molecule": "LiH",
+  "shots": 1000,
+  "sources": [
+    "amazon-braket-examples quantum chemistry VQE"
+  ]
+}

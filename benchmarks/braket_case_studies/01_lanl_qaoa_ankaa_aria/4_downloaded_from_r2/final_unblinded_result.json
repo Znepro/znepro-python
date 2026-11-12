@@ -1,0 +1,14 @@
+{
+  "error_reduction_factor": 2.777803145086446,
+  "ideal": -0.612,
+  "mitigated_absolute_error": 0.09791910578009488,
+  "quantity": "mean edge correlator",
+  "raw_absolute_error": 0.27199999999999996,
+  "raw_qpu_lambda_1": -0.34,
+  "server_mitigated_expectation": 0.5140808942199051,
+  "server_visible_scale_0": 0.34,
+  "sign_mask": -1,
+  "task_id": "task-08d910e9-020b-496d-9cc6-f883378400a5",
+  "unblinded_mitigated_expectation": -0.5140808942199051,
+  "wire_observable": "Z3 Z0"
+}

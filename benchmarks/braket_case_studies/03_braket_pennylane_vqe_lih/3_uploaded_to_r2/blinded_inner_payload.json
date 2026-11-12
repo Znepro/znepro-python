@@ -1,0 +1,26 @@
+{
+  "backend_name": "superconducting",
+  "clip_box": false,
+  "hardware_scales": [
+    {
+      "expectation": 2.67,
+      "lambda": 1.0
+    },
+    {
+      "expectation": 2.1449999999999996,
+      "lambda": 1.5
+    },
+    {
+      "expectation": 1.6599999999999993,
+      "lambda": 2.0
+    }
+  ],
+  "observable_unit": "hartree",
+  "qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[4];\ncreg c[2];\nry(0.21) q[2];\nrz(0.18) q[2];\nry(-0.33) q[0];\nrz(0.27) q[0];\nry(0.48) q[3];\nrz(-0.16) q[3];\nry(-0.19) q[1];\nrz(0.08) q[1];\ncx q[2], q[0];\ncx q[0], q[3];\ncx q[3], q[1];\nry(-0.44) q[2];\nrz(0.07) q[2];\nry(0.12) q[0];\nrz(-0.09) q[0];\nry(0.05) q[3];\nrz(0.11) q[3];\nry(0.36) q[1];\nrz(-0.22) q[1];\ncx q[2], q[0];\ncx q[0], q[3];\ncx q[3], q[1];\nmeasure q[2] -> c[0];\nmeasure q[0] -> c[1];\n",
+  "shots": {
+    "0000": 300,
+    "0001": 0,
+    "0100": 400,
+    "0101": 300
+  }
+}

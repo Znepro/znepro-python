@@ -1,0 +1,29 @@
+{
+  "ideal_mean_edge_correlator": -0.612,
+  "ionq_aria_1": {
+    "expectation": -0.51,
+    "lambda": 1.0
+  },
+  "observable": "mean <Z_u Z_v> over the nine edges of K(3,3)",
+  "rigetti_ankaa": {
+    "noise_scales": [
+      {
+        "expectation": -0.34,
+        "lambda": 1.0
+      },
+      {
+        "expectation": -0.255,
+        "lambda": 1.5
+      },
+      {
+        "expectation": -0.191,
+        "lambda": 2.0
+      }
+    ]
+  },
+  "shots": 1000,
+  "sources": [
+    "LANL QAOA hardware study, arXiv:2301.05750",
+    "companion device comparison, arXiv:2306.16627"
+  ]
+}

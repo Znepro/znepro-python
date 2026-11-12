@@ -1,0 +1,24 @@
+{
+  "backend_name": "neutral_atom",
+  "hardware_scales": [
+    {
+      "expectation": -0.76,
+      "lambda": 1.0
+    },
+    {
+      "expectation": -0.695,
+      "lambda": 1.3
+    },
+    {
+      "expectation": -0.635,
+      "lambda": 1.6
+    }
+  ],
+  "qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[8];\ncreg c[2];\nh q[4];\ncz q[4],q[7];\nrz(0.15) q[1];\nrx(0.22) q[6];\nmeasure q[4] -> c[0];\nmeasure q[7] -> c[1];\n",
+  "shots": {
+    "00000000": 60,
+    "00010000": 880,
+    "10000000": 0,
+    "10010000": 60
+  }
+}
