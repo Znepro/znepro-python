@@ -1,7 +1,9 @@
-//! OpenQASM 2.0 canonicalizer for outbound job payloads.
+//! OpenQASM canonicalizer for outbound job payloads.
 //!
-//! `cnot` becomes `cx` with the same control, target order. Gate angles accept
-//! decimal literals, scientific notation, and arithmetic `pi` expressions.
+//! OpenQASM 3 headers, `qubit`/`bit` declarations, and `c = measure q`
+//! assignments become OpenQASM 2. `cnot` becomes `cx` with the same control,
+//! target order. Gate angles accept decimal literals, scientific notation, and
+//! arithmetic `pi` expressions.
 
 use thiserror::Error;
 
@@ -33,57 +35,257 @@ struct QuantumReg {
     length: u32,
 }
 
-/// Rewrite gate aliases and angle expressions. Non-gate lines are preserved.
+/// Rewrite OpenQASM 3 syntax, gate aliases, and angle expressions.
 pub fn canonicalize_qasm(source: &str) -> Result<String, QasmError> {
-    let registers = quantum_registers(source);
-    let mut out = Vec::new();
-    for line in source.lines() {
-        out.push(canonicalize_line(line, &registers)?);
+    let lines = prepare_lines(source)?;
+    let (quantum, classical) = collect_registers(&lines);
+    let mut out = Vec::with_capacity(lines.len());
+    for line in &lines {
+        out.push(canonicalize_line(line, &quantum, &classical)?);
     }
-    let mut text = out.join("\n");
-    if source.ends_with('\n') || !text.is_empty() {
-        text.push('\n');
-    }
-    Ok(text)
+    Ok(finish(source, &out))
 }
 
 /// Gates in source order, after the same normalization `canonicalize_qasm` applies.
 pub fn qasm_gates(source: &str) -> Result<Vec<QasmGate>, QasmError> {
-    let registers = quantum_registers(source);
+    let lines = prepare_lines(source)?;
+    let (quantum, classical) = collect_registers(&lines);
     let mut gates = Vec::new();
-    for line in source.lines() {
-        if let Some(gate) = parse_gate_line(line, &registers)? {
+    for line in &lines {
+        let code = statement_code(line);
+        if !code.is_empty() && rewrite_measure(code, &quantum, &classical)?.is_some() {
+            continue;
+        }
+        if let Some(gate) = parse_gate_line(line, &quantum)? {
             gates.push(gate);
         }
     }
     Ok(gates)
 }
 
-fn quantum_registers(source: &str) -> Vec<QuantumReg> {
-    let mut registers = Vec::new();
-    for line in source.lines() {
-        let code = strip_comment(line).trim().trim_end_matches(';').trim();
-        let mut parts = code.split_whitespace();
-        let kind = parts.next().unwrap_or("").to_ascii_lowercase();
-        if kind != "qreg" {
+fn finish(source: &str, lines: &[String]) -> String {
+    let mut text = lines.join("\n");
+    if source.ends_with('\n') || !text.is_empty() {
+        text.push('\n');
+    }
+    text
+}
+
+fn prepare_lines(source: &str) -> Result<Vec<String>, QasmError> {
+    let mut lines = Vec::new();
+    let mut oq3 = false;
+    let mut has_qelib = false;
+    for raw in source.lines() {
+        let line = raw.trim_end_matches('\r');
+        let code = statement_code(line);
+        if code.is_empty() {
+            lines.push(line.to_owned());
             continue;
         }
+        if let Some((header, is_oq3)) = rewrite_header(code) {
+            oq3 |= is_oq3;
+            lines.push(header);
+            continue;
+        }
+        if let Some((include, std)) = rewrite_include(code) {
+            has_qelib |= std;
+            lines.push(include);
+            continue;
+        }
+        if let Some(decl) = rewrite_typed_decl(code)? {
+            lines.push(decl);
+            continue;
+        }
+        lines.push(line.to_owned());
+    }
+    if oq3 && !has_qelib {
+        if let Some(pos) = lines.iter().position(|line| line.starts_with("OPENQASM ")) {
+            lines.insert(pos + 1, "include \"qelib1.inc\";".to_owned());
+        }
+    }
+    Ok(lines)
+}
+
+fn collect_registers(lines: &[String]) -> (Vec<QuantumReg>, Vec<QuantumReg>) {
+    let mut quantum = Vec::new();
+    let mut classical = Vec::new();
+    for line in lines {
+        let code = statement_code(line);
+        let mut parts = code.split_whitespace();
+        let kind = parts.next().unwrap_or("").to_ascii_lowercase();
         let Some(decl) = parts.next() else {
             continue;
         };
+        if parts.next().is_some() {
+            continue;
+        }
         let Some((name, length)) = split_index(decl) else {
             continue;
         };
-        registers.push(QuantumReg { name, length });
+        let register = QuantumReg { name, length };
+        if kind == "qreg" {
+            quantum.push(register);
+        } else if kind == "creg" {
+            classical.push(register);
+        }
     }
-    registers
+    (quantum, classical)
 }
 
-fn canonicalize_line(line: &str, registers: &[QuantumReg]) -> Result<String, QasmError> {
-    let Some(gate) = parse_gate_line(line, registers)? else {
+fn canonicalize_line(
+    line: &str,
+    quantum: &[QuantumReg],
+    classical: &[QuantumReg],
+) -> Result<String, QasmError> {
+    let code = statement_code(line);
+    if code.is_empty() {
         return Ok(line.to_owned());
+    }
+    if let Some(measure) = rewrite_measure(code, quantum, classical)? {
+        return Ok(measure);
+    }
+    if let Some(gate) = parse_gate_line(line, quantum)? {
+        return Ok(format_gate(&gate));
+    }
+    Ok(line.to_owned())
+}
+
+fn statement_code(line: &str) -> &str {
+    strip_comment(line).trim().trim_end_matches(';').trim()
+}
+
+fn keyword_rest<'a>(code: &'a str, keyword: &str) -> Option<&'a str> {
+    if code.len() < keyword.len() || !code[..keyword.len()].eq_ignore_ascii_case(keyword) {
+        return None;
+    }
+    let rest = &code[keyword.len()..];
+    if rest.starts_with(|ch: char| ch.is_ascii_alphanumeric() || ch == '_') {
+        return None;
+    }
+    Some(rest)
+}
+
+fn rewrite_header(code: &str) -> Option<(String, bool)> {
+    let rest = keyword_rest(code, "openqasm")?;
+    let version = rest.trim().trim_end_matches(';').trim();
+    Some(("OPENQASM 2.0;".to_owned(), version.starts_with('3')))
+}
+
+fn rewrite_include(code: &str) -> Option<(String, bool)> {
+    let rest = keyword_rest(code, "include")?.trim();
+    let path = rest.trim_matches(|ch| ch == '"' || ch == '\'');
+    let std = path.eq_ignore_ascii_case("stdgates.inc") || path.eq_ignore_ascii_case("qelib1.inc");
+    let line = if std {
+        "include \"qelib1.inc\";".to_owned()
+    } else {
+        format!("include {rest};")
     };
-    Ok(format_gate(&gate))
+    Some((line, std))
+}
+
+fn rewrite_typed_decl(code: &str) -> Result<Option<String>, QasmError> {
+    let (kind, rest) = if let Some(rest) = keyword_rest(code, "qubit") {
+        ("qreg", rest.trim_start())
+    } else if let Some(rest) = keyword_rest(code, "bit") {
+        ("creg", rest.trim_start())
+    } else {
+        return Ok(None);
+    };
+    let (length, name_src) = if let Some(rest) = rest.strip_prefix('[') {
+        let Some(close) = rest.find(']') else {
+            return Err(QasmError::Target(code.to_owned()));
+        };
+        let length = rest[..close]
+            .trim()
+            .parse::<u32>()
+            .map_err(|_| QasmError::Target(code.to_owned()))?;
+        if length == 0 {
+            return Err(QasmError::Target(code.to_owned()));
+        }
+        (length, rest[close + 1..].trim_start())
+    } else {
+        (1, rest)
+    };
+    let Some((name, trailing)) = take_ident(name_src) else {
+        return Err(QasmError::Target(code.to_owned()));
+    };
+    if !trailing.is_empty() {
+        return Err(QasmError::Target(code.to_owned()));
+    }
+    Ok(Some(format!("{kind} {name}[{length}];")))
+}
+
+fn take_ident(token: &str) -> Option<(&str, &str)> {
+    let token = token.trim_start();
+    let mut chars = token.chars();
+    let first = chars.next()?;
+    if !first.is_ascii_alphabetic() && first != '_' {
+        return None;
+    }
+    let mut len = first.len_utf8();
+    for ch in chars {
+        if ch.is_ascii_alphanumeric() || ch == '_' {
+            len += ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    Some((&token[..len], token[len..].trim_start()))
+}
+
+fn rewrite_measure(
+    code: &str,
+    quantum: &[QuantumReg],
+    classical: &[QuantumReg],
+) -> Result<Option<String>, QasmError> {
+    if let Some((lhs, rhs)) = code.split_once('=') {
+        let rhs = rhs.trim();
+        let Some(target) = keyword_rest(rhs, "measure") else {
+            return Ok(None);
+        };
+        let target = target.trim().trim_end_matches(';').trim();
+        let lhs = lhs.trim();
+        if target.is_empty() || lhs.is_empty() {
+            return Err(QasmError::Target(code.to_owned()));
+        }
+        check_endpoint(target, quantum)?;
+        check_endpoint(lhs, classical)?;
+        return Ok(Some(format!("measure {target} -> {lhs};")));
+    }
+    let Some(rest) = keyword_rest(code, "measure") else {
+        return Ok(None);
+    };
+    let rest = rest.trim();
+    if rest.is_empty() {
+        return Err(QasmError::Target(code.to_owned()));
+    }
+    if let Some((qubit, clbit)) = rest.split_once("->") {
+        let qubit = qubit.trim();
+        let clbit = clbit.trim().trim_end_matches(';').trim();
+        if qubit.is_empty() || clbit.is_empty() {
+            return Err(QasmError::Target(code.to_owned()));
+        }
+        check_endpoint(qubit, quantum)?;
+        check_endpoint(clbit, classical)?;
+        return Ok(Some(format!("measure {qubit} -> {clbit};")));
+    }
+    check_endpoint(rest, quantum)?;
+    Ok(Some(format!("measure {rest};")))
+}
+
+fn check_endpoint(token: &str, registers: &[QuantumReg]) -> Result<(), QasmError> {
+    if let Some((name, index)) = split_index(token) {
+        if let Some(register) = registers.iter().find(|item| item.name == name) {
+            if index >= register.length {
+                return Err(QasmError::Target(token.to_owned()));
+            }
+        }
+        return Ok(());
+    }
+    if registers.is_empty() || registers.iter().any(|item| item.name == token) {
+        return Ok(());
+    }
+    Err(QasmError::Target(token.to_owned()))
 }
 
 fn parse_gate_line(line: &str, registers: &[QuantumReg]) -> Result<Option<QasmGate>, QasmError> {
@@ -92,7 +294,12 @@ fn parse_gate_line(line: &str, registers: &[QuantumReg]) -> Result<Option<QasmGa
         return Ok(None);
     }
     let (call, args) = split_call(code);
-    let opcode = call.split('(').next().unwrap_or("").trim().to_ascii_lowercase();
+    let opcode = call
+        .split('(')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
     if matches!(
         opcode.as_str(),
         "openqasm" | "include" | "qreg" | "creg" | "barrier" | "measure" | "reset" | "gate" | "if"
@@ -185,7 +392,9 @@ fn parse_angle(raw: &str) -> Result<f64, QasmError> {
         bytes: raw.trim().as_bytes(),
         index: 0,
     };
-    let value = parser.parse_expr().map_err(|_| QasmError::Angle(raw.to_owned()))?;
+    let value = parser
+        .parse_expr()
+        .map_err(|_| QasmError::Angle(raw.to_owned()))?;
     parser.skip_ws();
     if parser.index != parser.bytes.len() || !value.is_finite() {
         return Err(QasmError::Angle(raw.to_owned()));
@@ -360,7 +569,10 @@ fn split_index(token: &str) -> Option<(String, u32)> {
     if name.is_empty() {
         return None;
     }
-    let index = token[open + 1..token.len() - 1].trim().parse::<u32>().ok()?;
+    let index = token[open + 1..token.len() - 1]
+        .trim()
+        .parse::<u32>()
+        .ok()?;
     Some((name.to_owned(), index))
 }
 
@@ -371,11 +583,18 @@ mod tests {
     #[test]
     fn compound_pi_matches_the_decimal_literal() {
         let expr = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(3*pi/4) q[1];\n").expect("expr");
-        let lit = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(2.356194490192345) q[1];\n").expect("lit");
+        let lit =
+            qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(2.356194490192345) q[1];\n").expect("lit");
         assert!((expr[0].parameters[0] - lit[0].parameters[0]).abs() < 1e-15);
         assert!((expr[0].parameters[0] - 2.356194490192345).abs() < 1e-14);
         assert_eq!(expr[0].qubits[0].index, 1);
-        for sample in ["-3*pi/4", "(3*pi)/4", "2*pi/3", "0.5*pi", "1.5707963267948966e0"] {
+        for sample in [
+            "-3*pi/4",
+            "(3*pi)/4",
+            "2*pi/3",
+            "0.5*pi",
+            "1.5707963267948966e0",
+        ] {
             let qasm = format!("OPENQASM 2.0;\nqreg q[1];\nry({sample}) q[0];\n");
             let parsed = qasm_gates(&qasm).unwrap_or_else(|_| panic!("{sample}"));
             assert!(parsed[0].parameters[0].is_finite(), "{sample}");
@@ -411,5 +630,68 @@ mod tests {
         assert!(matches!(qubit, QasmError::Target(_)));
         assert!(qubit.to_string().contains("malformed target qubit"));
         assert!(!qubit.to_string().contains("malformed angle expression"));
+    }
+
+    #[test]
+    fn openqasm3_braket_program_normalizes_to_openqasm2() {
+        let source = "\
+OPENQASM 3.0;
+include \"stdgates.inc\";
+qubit[2] q;
+bit[2] c;
+h q[0];
+cnot q[0], q[1];
+ry(3*pi/4) q[1];
+c = measure q;
+";
+        let text = canonicalize_qasm(source).expect("oq3");
+        assert!(text.starts_with("OPENQASM 2.0;\ninclude \"qelib1.inc\";\n"));
+        assert!(text.contains("qreg q[2];"));
+        assert!(text.contains("creg c[2];"));
+        assert!(!text.contains("qubit["));
+        assert!(!text.contains("bit["));
+        assert!(!text.to_ascii_lowercase().contains("cnot"));
+        assert!(text.contains("cx q[0], q[1];"));
+        assert!(text.contains("measure q -> c;"));
+        assert!(!text.contains("stdgates"));
+        assert!(!text.contains("OPENQASM 3"));
+        assert_eq!(canonicalize_qasm(&text).expect("again"), text);
+        let gates = qasm_gates(source).expect("gates");
+        assert_eq!(gates[0].name, "h");
+        assert_eq!(gates[1].name, "cx");
+        assert_eq!(
+            gates[1].qubits.iter().map(|q| q.index).collect::<Vec<_>>(),
+            vec![0, 1]
+        );
+        assert_eq!(gates[2].name, "ry");
+        assert!((gates[2].parameters[0] - 2.356194490192345).abs() < 1e-14);
+        let literal =
+            qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(2.356194490192345) q[1];\n").expect("lit");
+        assert!((gates[2].parameters[0] - literal[0].parameters[0]).abs() < 1e-14);
+    }
+
+    #[test]
+    fn openqasm3_register_and_measure_forms() {
+        let text =
+            canonicalize_qasm("OPENQASM 3;\nqubit q;\nbit c;\nc[0] = measure q[0];\nmeasure q;\n")
+                .expect("forms");
+        assert!(text.contains("OPENQASM 2.0;"));
+        assert!(text.contains("include \"qelib1.inc\";"));
+        assert!(text.contains("qreg q[1];"));
+        assert!(text.contains("creg c[1];"));
+        assert!(text.contains("measure q[0] -> c[0];"));
+        assert!(text.contains("measure q;"));
+        let indexed = canonicalize_qasm(
+            "OPENQASM 2.0;\nqreg q[2];\ncreg c[2];\nc[1] = measure q[1];\nmeasure q[0];\n",
+        )
+        .expect("indexed");
+        assert!(indexed.contains("measure q[1] -> c[1];"));
+        assert!(indexed.contains("measure q[0];"));
+        assert!(!indexed.contains("include "));
+        let decl = canonicalize_qasm("qubit[2] q;\n").expect("decl");
+        assert!(decl.starts_with("qreg q[2];"));
+        let range = qasm_gates("OPENQASM 3.0;\nqubit[2] q;\nry(pi/2) q[9];\n").expect_err("range");
+        assert!(range.to_string().contains("malformed target qubit 'q[9]'"));
+        assert!(!range.to_string().contains("malformed angle expression"));
     }
 }

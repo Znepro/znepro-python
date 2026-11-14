@@ -22,7 +22,7 @@ from znepro._envelope import open_envelope, seal_envelope
 
 HardwareCalibration = _core.HardwareCalibration
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 DEFAULT_BASE_URL = "https://api.znepro.com"
 USER_AGENT = f"znepro-sdk/{__version__}"
 _TERMINAL_FAILURES = {"FAILED", "ERROR", "TASK_FAILED", "TASK_ERROR"}
@@ -184,7 +184,11 @@ def _ticket_text(ticket: Mapping[str, Any], names: tuple[str, ...]) -> str | Non
 
 
 def canonicalize_qasm(qasm: str) -> str:
-    """Rewrite ``cnot`` to ``cx`` and evaluate compound ``pi`` gate angles."""
+    """Rewrite OpenQASM 3 registers and measures to OpenQASM 2.
+
+    ``qubit``/``bit`` declarations, ``c = measure q``, ``cnot``, and compound
+    ``pi`` angles are normalized before a job leaves the client.
+    """
     return _core.canonicalize_qasm(qasm)
 
 
@@ -194,10 +198,13 @@ def qasm_gates(qasm: str) -> list[tuple[str, list[int], list[float]]]:
 
 
 def canonical_job_bytes(payload_json: str) -> bytes:
-    """Compact sorted JSON. Missing ``backend_name`` becomes ``superconducting``."""
+    """Compact sorted JSON. Rewrites ``qasm`` and fills a missing ``backend_name``."""
     document = json.loads(payload_json)
     if not isinstance(document, dict):
         raise ValueError("job payload must be a JSON object")
+    qasm = document.get("qasm")
+    if isinstance(qasm, str):
+        document["qasm"] = canonicalize_qasm(qasm)
     if not document.get("backend_name"):
         document["backend_name"] = "superconducting"
     text = json.dumps(document, separators=(",", ":"), sort_keys=True, allow_nan=False)
@@ -514,7 +521,11 @@ class ZNEProClient:
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
     ) -> dict[str, Any]:
-        """Full R2 ticket lifecycle: init → PUT sealed job → commit → poll result."""
+        """Full R2 ticket lifecycle: init → PUT sealed job → commit → poll result.
+
+        ``qasm`` inside ``payload_json`` is canonicalized before the object is sealed,
+        including raw OpenQASM 3 payloads that skipped ``build_job_json``.
+        """
         wait = self.timeout_s if timeout_s is None else float(timeout_s)
         ticket = self.create_ticket(observable, hardware_backend=hardware_backend)
         upload_url = _ticket_text(ticket, ("upload_presigned_url", "upload_url", "put_url"))

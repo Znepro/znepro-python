@@ -438,14 +438,14 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
         if url.startswith("https://api.znepro.com/"):
             assert headers.get("authorization") == "Bearer test"
             assert headers.get("accept") == "application/json"
-            assert headers.get("user-agent") == "znepro-sdk/1.0.1"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.2"
             assert "python-urllib" not in headers["user-agent"].lower()
             assert credential_names == ["authorization"]
         else:
             assert "cloudflarestorage.com" in url
             assert method in {"PUT", "GET"}
             assert credential_names == []
-            assert headers.get("user-agent") == "znepro-sdk/1.0.1"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.2"
             assert "X-Amz-Signature" in url
     puts = [(headers, body) for method, url, headers, body in seen if method == "PUT"]
     assert len(puts) == 2
@@ -516,6 +516,101 @@ def test_pi_angles_and_cnot_canonicalize_with_distinct_errors():
         canonicalize_qasm("OPENQASM 2.0;\nqreg q[1];\nry(pi/2) q[9];\n")
     assert "malformed target qubit" not in str(angle.value)
     assert "malformed angle expression" not in str(target.value)
+
+
+_BRAKET_OPENQASM3 = """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+bit[2] c;
+h q[0];
+cnot q[0], q[1];
+ry(3*pi/4) q[1];
+c = measure q;
+"""
+
+
+def _assert_braket_qasm(qasm: str) -> None:
+    assert qasm.startswith('OPENQASM 2.0;\ninclude "qelib1.inc";\n')
+    assert "qreg q[2];" in qasm
+    assert "creg c[2];" in qasm
+    assert "qubit[" not in qasm
+    assert "bit[" not in qasm
+    assert "cnot" not in qasm.lower()
+    assert "stdgates" not in qasm
+    assert "cx q[0], q[1];" in qasm
+    assert "measure q -> c;" in qasm
+    gates = qasm_gates(qasm)
+    ry = next(gate for gate in gates if gate[0] == "ry")
+    cx = next(gate for gate in gates if gate[0] == "cx")
+    literal = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(2.356194490192345) q[1];\n")
+    assert abs(ry[2][0] - literal[0][2][0]) < 1e-14
+    assert cx[1] == [0, 1]
+
+
+def test_openqasm3_braket_program_normalization():
+    built = json.loads(
+        ZNEProClient.build_job_json(
+            _BRAKET_OPENQASM3,
+            {"00": 1, "11": 1},
+            observable="ZZ",
+            shots=2,
+        )
+    )
+    _assert_braket_qasm(built["qasm"])
+
+    put_url = "https://example-r2.cloudflarestorage.com/bucket/in?X-Amz-Signature=putsig"
+    get_url = "https://example-r2.cloudflarestorage.com/bucket/out?X-Amz-Signature=getsig"
+    uploaded: list[str] = []
+
+    def transport(method, url, body, headers, timeout_s):  # noqa: ARG001
+        lowered = {str(key).lower(): str(value) for key, value in headers.items()}
+        if method == "POST" and url.endswith("/api/v1/client/tasks/init"):
+            assert lowered.get("authorization") == "Bearer test"
+            return 200, json.dumps(
+                {
+                    "task_id": "task-oq3",
+                    "upload_presigned_url": put_url,
+                    "output_presigned_url": get_url,
+                    "encryption_key_hex": _TICKET_KEY,
+                }
+            ).encode()
+        if method == "PUT" and url == put_url:
+            assert "authorization" not in lowered
+            assert lowered.get("user-agent") == "znepro-sdk/1.0.2"
+            uploaded.append(json.loads(open_envelope(body, _TICKET_KEY))["qasm"])
+            return 200, b""
+        if method == "POST" and url.endswith("/api/v1/client/tasks/commit"):
+            return 200, json.dumps({"status": "QUEUED"}).encode()
+        if method == "GET" and url == get_url:
+            receipt = {
+                "status": "COMPLETED",
+                "mitigated_expectation": 0.5,
+                "engine_version": "0.1.0",
+            }
+            return 200, seal_envelope(json.dumps(receipt).encode(), _TICKET_KEY, nonce=b"0123456789ab")
+        raise AssertionError(f"unexpected request {method} {url}")
+
+    client = ZNEProClient(api_key="test", transport=transport, timeout_s=5)
+    raw = json.dumps({"qasm": _BRAKET_OPENQASM3, "shots": {"00": 1, "11": 1}})
+    waited = client.submit_and_wait(raw, observable="ZZ", timeout_s=2, poll_interval_s=0.01)
+    assert waited["status"] == "COMPLETED"
+    assert waited["engine_version"] == "0.1.0"
+    mitigated = json.loads(
+        client.mitigate_json(raw, observable="ZZ", timeout_s=2, poll_interval_s=0.01)
+    )
+    assert mitigated["status"] == "COMPLETED"
+    submitted = client.submit_job(
+        _BRAKET_OPENQASM3,
+        {"00": 1, "11": 1},
+        observable="ZZ",
+        shots=2,
+        timeout_s=2,
+        poll_interval_s=0.01,
+    )
+    assert submitted["status"] == "COMPLETED"
+    assert len(uploaded) == 3
+    for qasm in uploaded:
+        _assert_braket_qasm(qasm)
 
 
 def test_partial_card_omits_median_error_defaults_and_maps_readout_fidelity():

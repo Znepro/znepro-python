@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "znepro"
-version = "1.0.1"
+version = "1.0.2"
 description = "Official Python client and multi-hardware calibration SDK for ZNEPro"
 readme = "README.md"
 requires-python = ">=3.10"

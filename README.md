@@ -1,4 +1,4 @@
-# ZNEPro SDK (`znepro` / `znepro-sdk`) 1.0.1
+# ZNEPro SDK (`znepro` / `znepro-sdk`) 1.0.2
 
 Official open-source client and multi-platform hardware calibration extractor for the **ZNEPro** Quantum Error Mitigation (QEM) service.
 
