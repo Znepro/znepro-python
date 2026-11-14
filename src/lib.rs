@@ -11,6 +11,7 @@
 pub mod adapters;
 pub mod client;
 pub mod layout;
+pub mod qasm;
 pub mod schema;
 
 #[cfg(feature = "python")]
@@ -27,4 +28,7 @@ pub use client::{
     PATH_CLIENT_TASK_COMMIT, PATH_CLIENT_TASK_INIT, PATH_TASKS, PATH_TASK_RESULT_PREFIX,
 };
 pub use layout::QubitLayout;
-pub use schema::{ClientError, EdgeCalibration, HardwareCalibration, QubitCalibration};
+pub use qasm::{canonicalize_qasm, qasm_gates, QasmError, QasmGate};
+pub use schema::{
+    symmetric_readout_pair, ClientError, EdgeCalibration, HardwareCalibration, QubitCalibration,
+};

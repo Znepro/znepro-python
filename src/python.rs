@@ -16,6 +16,7 @@ use crate::adapters::{
 };
 use crate::client::ZneproJobRequest;
 use crate::layout::QubitLayout;
+use crate::qasm::canonicalize_qasm;
 use crate::schema::{ClientError, HardwareCalibration};
 
 fn client_err(err: ClientError) -> PyErr {
@@ -230,6 +231,7 @@ fn py_build_job_request_json(
     if counts.is_empty() {
         return Err(PyValueError::new_err("counts histogram must be non-empty"));
     }
+    let qasm = canonicalize_qasm(&qasm).map_err(|err| PyValueError::new_err(err.to_string()))?;
     let total: u64 = counts.values().copied().sum();
     if let Some(declared) = shots {
         if declared != total {
@@ -300,6 +302,7 @@ fn py_build_multi_scale_job_json(
     calibration: Option<&PyHardwareCalibration>,
 ) -> PyResult<String> {
     // Optional offline / harness helper — not the primary client path.
+    let qasm = canonicalize_qasm(&qasm).map_err(|err| PyValueError::new_err(err.to_string()))?;
     let calib = calibration.map(|card| card.inner.clone());
     let request = if let Some(pauli) = pauli_expectations {
         let mut req = ZneproJobRequest::multi_term(qasm, noise_scales, pauli, shots, calib);
@@ -328,7 +331,31 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_build_job_request_json, m)?)?;
     m.add_function(wrap_pyfunction!(py_build_histogram_job_json, m)?)?;
     m.add_function(wrap_pyfunction!(py_build_multi_scale_job_json, m)?)?;
+    m.add_function(wrap_pyfunction!(py_canonicalize_qasm, m)?)?;
+    m.add_function(wrap_pyfunction!(py_qasm_gates, m)?)?;
     Ok(())
+}
+
+#[pyfunction]
+#[pyo3(name = "canonicalize_qasm")]
+fn py_canonicalize_qasm(qasm: &str) -> PyResult<String> {
+    canonicalize_qasm(qasm).map_err(|err| PyValueError::new_err(err.to_string()))
+}
+
+#[pyfunction]
+#[pyo3(name = "qasm_gates")]
+fn py_qasm_gates(qasm: &str) -> PyResult<Vec<(String, Vec<u32>, Vec<f64>)>> {
+    let gates = crate::qasm::qasm_gates(qasm).map_err(|err| PyValueError::new_err(err.to_string()))?;
+    Ok(gates
+        .into_iter()
+        .map(|gate| {
+            (
+                gate.name,
+                gate.qubits.into_iter().map(|qubit| qubit.index).collect(),
+                gate.parameters,
+            )
+        })
+        .collect())
 }
 
 #[cfg(test)]

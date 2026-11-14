@@ -44,6 +44,17 @@ pub fn sanitize_error(value: Option<f64>) -> Option<f64> {
     })
 }
 
+/// Map a scalar readout fidelity `F` in `(0, 1]` onto a symmetric assignment pair.
+///
+/// `prob_meas1_prep0 = prob_meas0_prep1 = (1 - F) / 2`, so `1 - p01 - p10 = F`.
+pub fn symmetric_readout_pair(fidelity: f64) -> Option<(f64, f64)> {
+    if !fidelity.is_finite() || fidelity <= 0.0 || fidelity > 1.0 {
+        return None;
+    }
+    let probability = sanitize_readout(Some((1.0 - fidelity) / 2.0))?;
+    Some((probability, probability))
+}
+
 /// Sanitize a readout assignment error into `[0, 0.5]`.
 pub fn sanitize_readout(value: Option<f64>) -> Option<f64> {
     value.and_then(|v| {
@@ -187,12 +198,11 @@ impl HardwareCalibration {
         }
     }
 
-    /// Fill any missing default fields from the median of per-qubit / per-edge values.
+    /// Fill missing gate-time defaults from the rows that are actually present.
+    ///
+    /// Error defaults stay unset. A median copied into `default_error_1q` or
+    /// `default_error_2q` would be applied to qubits and edges the card never measured.
     pub fn populate_defaults_from_medians(&mut self) {
-        if self.default_error_1q.is_none() {
-            let vals: Vec<f64> = self.qubits.values().filter_map(|q| q.error_1q).collect();
-            self.default_error_1q = sanitize_error(median_f64(vals));
-        }
         if self.default_gate_time_1q_ns.is_none() {
             let vals: Vec<f64> = self
                 .qubits
@@ -200,10 +210,6 @@ impl HardwareCalibration {
                 .filter_map(|q| q.gate_time_1q_ns)
                 .collect();
             self.default_gate_time_1q_ns = sanitize_positive(median_f64(vals));
-        }
-        if self.default_error_2q.is_none() {
-            let vals: Vec<f64> = self.edges.iter().map(|e| e.error_2q).collect();
-            self.default_error_2q = sanitize_error(median_f64(vals));
         }
         if self.default_gate_time_2q_ns.is_none() {
             let vals: Vec<f64> = self.edges.iter().filter_map(|e| e.gate_time_2q_ns).collect();

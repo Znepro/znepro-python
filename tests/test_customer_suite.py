@@ -62,7 +62,7 @@ def test_ticket_routes_round_trip_with_a_fake_transport() -> None:
             }).encode()
         if url == put_url:
             assert "authorization" not in lowered
-            assert lowered.get("user-agent") == "znepro-sdk/1.0.0"
+            assert lowered.get("user-agent") == "znepro-sdk/1.0.1"
             assert "content-type" not in lowered
             uploaded = json.loads(open_envelope(body, _TICKET_KEY))
             assert uploaded["shots"]["0"] == 3000

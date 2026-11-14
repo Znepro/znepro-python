@@ -91,6 +91,32 @@ fn test_qiskit_operations_map_converts_seconds_and_keeps_readout() {
 }
 
 #[test]
+fn test_partial_braket_card_omits_error_defaults_and_splits_readout_fidelity() {
+    let raw = json!({
+        "standardized": {
+            "oneQubitProperties": {
+                "0": {
+                    "oneQubitFidelity": [
+                        {"fidelityType": "RANDOMIZED_BENCHMARKING", "fidelity": 0.9964546331080112},
+                        {"fidelityType": "READOUT", "fidelity": 0.971}
+                    ]
+                }
+            },
+            "twoQubitProperties": {
+                "0-1": {"twoQubitGateFidelity": [{"fidelity": 0.9943965178886834}]}
+            }
+        }
+    });
+    let calib = extract_from_braket_json(&raw, None).expect("partial");
+    assert!(calib.default_error_1q.is_none());
+    assert!(calib.default_error_2q.is_none());
+    assert_eq!(calib.qubits.len(), 1);
+    let row = calib.qubits.get(&0).unwrap();
+    assert!((row.prob_meas1_prep0.unwrap() - 0.0145).abs() < 1e-12);
+    assert!((row.prob_meas0_prep1.unwrap() - 0.0145).abs() < 1e-12);
+}
+
+#[test]
 fn test_braket_standardized_ionq_and_iqm_1based_normalization() {
     let std = json!({
         "standardized": {

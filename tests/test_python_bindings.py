@@ -15,11 +15,13 @@ from znepro import (
     ZNEProClient,
     auto_extract_calibration,
     build_neutral_atom_calibration,
+    canonicalize_qasm,
     extract_from_braket,
     extract_from_cirq,
     extract_from_pytket,
     extract_from_qiskit,
     open_envelope,
+    qasm_gates,
     seal_envelope,
 )
 
@@ -406,6 +408,7 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
                 "task_id": "task-unit-1",
                 "mitigated_expectation": 0.91,
                 "unmitigated_expectation": 0.75,
+                "engine_version": "2026.11.13",
             }
             return 200, seal_envelope(json.dumps(receipt).encode(), _TICKET_KEY, nonce=b"0123456789ab")
         raise AssertionError(f"unexpected request {method} {url}")
@@ -422,6 +425,7 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
     )
     assert result["status"] == "COMPLETED"
     assert result["mitigated_expectation"] == 0.91
+    assert result["engine_version"] == "2026.11.13"
     assert seen
     for method, url, headers, _body in seen:
         credential_names = [
@@ -434,14 +438,14 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
         if url.startswith("https://api.znepro.com/"):
             assert headers.get("authorization") == "Bearer test"
             assert headers.get("accept") == "application/json"
-            assert headers.get("user-agent") == "znepro-sdk/1.0.0"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.1"
             assert "python-urllib" not in headers["user-agent"].lower()
             assert credential_names == ["authorization"]
         else:
             assert "cloudflarestorage.com" in url
             assert method in {"PUT", "GET"}
             assert credential_names == []
-            assert headers.get("user-agent") == "znepro-sdk/1.0.0"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.1"
             assert "X-Amz-Signature" in url
     puts = [(headers, body) for method, url, headers, body in seen if method == "PUT"]
     assert len(puts) == 2
@@ -493,6 +497,51 @@ def test_plain_json_receipt_is_accepted_only_without_a_key():
     assert client._receipt_document(plain, None)["mitigated_expectation"] == 0.2
     with pytest.raises(InvalidTag):
         client._receipt_document(plain, _TICKET_KEY)
+
+
+def test_pi_angles_and_cnot_canonicalize_with_distinct_errors():
+    expr = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(3*pi/4) q[1];\n")
+    literal = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nry(2.356194490192345) q[1];\n")
+    assert abs(expr[0][2][0] - literal[0][2][0]) < 1e-14
+    assert expr[0][1] == [1]
+    rewritten = canonicalize_qasm("OPENQASM 2.0;\nqreg q[2];\nry(3*pi/4) q[1];\n")
+    assert abs(qasm_gates(rewritten)[0][2][0] - expr[0][2][0]) < 1e-15
+    cnot = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nCNOT q[0], q[1];\n")
+    cx = qasm_gates("OPENQASM 2.0;\nqreg q[2];\ncx q[0], q[1];\n")
+    assert cnot[0][0] == "cx"
+    assert cnot[0][1] == cx[0][1] == [0, 1]
+    with pytest.raises(ValueError, match="malformed angle expression") as angle:
+        canonicalize_qasm("OPENQASM 2.0;\nqreg q[1];\nry(3*pi/) q[0];\n")
+    with pytest.raises(ValueError, match="malformed target qubit") as target:
+        canonicalize_qasm("OPENQASM 2.0;\nqreg q[1];\nry(pi/2) q[9];\n")
+    assert "malformed target qubit" not in str(angle.value)
+    assert "malformed angle expression" not in str(target.value)
+
+
+def test_partial_card_omits_median_error_defaults_and_maps_readout_fidelity():
+    partial = {
+        "standardized": {
+            "oneQubitProperties": {
+                "0": {
+                    "oneQubitFidelity": [
+                        {"fidelityType": "RANDOMIZED_BENCHMARKING", "fidelity": 0.9964546331080112},
+                        {"fidelityType": "READOUT", "fidelity": 0.971},
+                    ]
+                }
+            },
+            "twoQubitProperties": {
+                "0-1": {"twoQubitGateFidelity": [{"fidelity": 0.9943965178886834}]}
+            },
+        }
+    }
+    card = extract_from_braket(partial)
+    body = json.loads(card.to_json())
+    assert "default_error_1q" not in body
+    assert "default_error_2q" not in body
+    assert "1" not in body["qubits"]
+    assert abs(body["qubits"]["0"]["prob_meas1_prep0"] - 0.0145) < 1e-12
+    assert abs(body["qubits"]["0"]["prob_meas0_prep1"] - 0.0145) < 1e-12
+    assert abs((1.0 - 0.0145 - 0.0145) - 0.971) < 1e-12
 
 
 def test_compiled_extension_binary_has_no_proprietary_tokens():

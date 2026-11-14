@@ -1,6 +1,6 @@
 # Hardware adapters
 
-Each adapter reads vendor telemetry and emits the canonical `hardware_calibration` object. Missing numeric fields are imputed from the calibrated median of the card. `NaN`, infinities, and values outside the physical bounds are dropped. Qubit and edge maps are serialized in deterministic order.
+Each adapter reads vendor telemetry and emits the canonical `hardware_calibration` object. A partial card does not copy the median of the measured rows into `default_error_1q` or `default_error_2q`, so unmeasured qubits and edges stay on the uncalibrated model. A scalar readout fidelity `F` becomes the symmetric pair `(1-F)/2`. `NaN`, infinities, and values outside the physical bounds are dropped. Qubit and edge maps are serialized in deterministic order.
 
 Layout remapping projects a full-chip table onto the physical qubits used by a transpiled circuit. Pass `layout` as a logical-to-physical list. Edges that touch an unmapped qubit are removed.
 

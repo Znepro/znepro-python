@@ -22,7 +22,7 @@ from znepro._envelope import open_envelope, seal_envelope
 
 HardwareCalibration = _core.HardwareCalibration
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 DEFAULT_BASE_URL = "https://api.znepro.com"
 USER_AGENT = f"znepro-sdk/{__version__}"
 _TERMINAL_FAILURES = {"FAILED", "ERROR", "TASK_FAILED", "TASK_ERROR"}
@@ -181,6 +181,16 @@ def _ticket_text(ticket: Mapping[str, Any], names: tuple[str, ...]) -> str | Non
         if isinstance(value, str) and value.strip():
             return value.strip()
     return None
+
+
+def canonicalize_qasm(qasm: str) -> str:
+    """Rewrite ``cnot`` to ``cx`` and evaluate compound ``pi`` gate angles."""
+    return _core.canonicalize_qasm(qasm)
+
+
+def qasm_gates(qasm: str) -> list[tuple[str, list[int], list[float]]]:
+    """Return ``(name, qubit indexes, parameters)`` after canonicalization."""
+    return [tuple(gate) for gate in _core.qasm_gates(qasm)]
 
 
 def canonical_job_bytes(payload_json: str) -> bytes:
@@ -630,6 +640,8 @@ __all__ = [
     "auto_extract_calibration",
     "build_neutral_atom_calibration",
     "canonical_job_bytes",
+    "canonicalize_qasm",
+    "qasm_gates",
     "extract_from_braket",
     "extract_from_cirq",
     "extract_from_pytket",

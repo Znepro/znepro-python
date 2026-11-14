@@ -7,8 +7,8 @@ use serde_json::Value;
 use crate::adapters::{apply_layout, parse_valued, to_ns, to_us};
 use crate::layout::QubitLayout;
 use crate::schema::{
-    sanitize_error, sanitize_positive, sanitize_readout, EdgeCalibration, HardwareCalibration,
-    QubitCalibration, ClientError,
+    sanitize_error, sanitize_positive, symmetric_readout_pair, EdgeCalibration,
+    HardwareCalibration, QubitCalibration, ClientError,
 };
 
 fn upsert(map: &mut BTreeMap<u32, QubitCalibration>, q: u32) -> &mut QubitCalibration {
@@ -74,9 +74,12 @@ fn extract_standardized(raw: &Value, qubits: &mut BTreeMap<u32, QubitCalibration
                 .or_else(|| node.get("readoutFidelity"))
             {
                 if let Some((v, _)) = parse_valued(ro) {
-                    let e = fidelity_to_error(v).and_then(|x| sanitize_readout(Some(x)));
-                    slot.prob_meas1_prep0 = e;
-                    slot.prob_meas0_prep1 = e;
+                    if slot.prob_meas1_prep0.is_none() && slot.prob_meas0_prep1.is_none() {
+                        if let Some((prepared_one, prepared_zero)) = symmetric_readout_pair(v) {
+                            slot.prob_meas1_prep0 = Some(prepared_one);
+                            slot.prob_meas0_prep1 = Some(prepared_zero);
+                        }
+                    }
                 }
             }
         }
@@ -136,7 +139,7 @@ fn extract_ionq(raw: &Value, calib: &mut HardwareCalibration, qubits: &mut BTree
     let spam = fid
         .and_then(|f| f.pointer("/spam/mean").or_else(|| f.get("spam")))
         .and_then(|v| v.as_f64())
-        .and_then(|v| fidelity_to_error(v).and_then(|e| sanitize_readout(Some(e))));
+        .and_then(symmetric_readout_pair);
 
     let t1 = timing
         .and_then(|t| t.get("T1"))
@@ -167,8 +170,10 @@ fn extract_ionq(raw: &Value, calib: &mut HardwareCalibration, qubits: &mut BTree
             slot.t2_us = sanitize_positive(t2);
             slot.error_1q = e1;
             slot.gate_time_1q_ns = sanitize_positive(g1);
-            slot.prob_meas1_prep0 = spam;
-            slot.prob_meas0_prep1 = spam;
+            if let Some((prepared_one, prepared_zero)) = spam {
+                slot.prob_meas1_prep0 = Some(prepared_one);
+                slot.prob_meas0_prep1 = Some(prepared_zero);
+            }
         }
     }
 }
@@ -194,9 +199,12 @@ fn extract_iqm(raw: &Value, qubits: &mut BTreeMap<u32, QubitCalibration>, edges:
             slot.error_1q = fidelity_to_error(f);
         }
         if let Some(f) = node.get("f_RO").and_then(|v| v.as_f64()) {
-            let e = fidelity_to_error(f).and_then(|x| sanitize_readout(Some(x)));
-            slot.prob_meas1_prep0 = e;
-            slot.prob_meas0_prep1 = e;
+            if slot.prob_meas1_prep0.is_none() && slot.prob_meas0_prep1.is_none() {
+                if let Some((prepared_one, prepared_zero)) = symmetric_readout_pair(f) {
+                    slot.prob_meas1_prep0 = Some(prepared_one);
+                    slot.prob_meas0_prep1 = Some(prepared_zero);
+                }
+            }
         }
         if let Some(t1) = node.get("T1").and_then(|v| v.as_f64()) {
             slot.t1_us = sanitize_positive(to_us(t1, Some("s")));

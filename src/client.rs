@@ -256,6 +256,9 @@ pub struct R2JobStatusResponse {
     pub unmitigated_expectation: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// Worker build identifier, when the receipt includes one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub engine_version: Option<String>,
     /// True on the calibrated arm and false on the zero-telemetry arm.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub server_calibration_used: Option<bool>,
@@ -287,6 +290,7 @@ mod receipt_tests {
             "calibration_applied": false,
             "calibration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             "server_version": "1.0.0",
+            "engine_version": "2026.11.13",
             "metrics": {"mitigated_expectation": 0.9}
         }"#;
         let parsed: R2JobStatusResponse = serde_json::from_str(raw).expect("receipt");
@@ -311,6 +315,8 @@ mod receipt_tests {
         assert_eq!(back["calibration_applied"], false);
         assert_eq!(back["calibration_sha256"], "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
         assert_eq!(back["server_version"], "1.0.0");
+        assert_eq!(parsed.engine_version.as_deref(), Some("2026.11.13"));
+        assert_eq!(back["engine_version"], "2026.11.13");
         assert!(back.get("extra").is_none());
     }
 }
