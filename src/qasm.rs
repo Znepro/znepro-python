@@ -2,8 +2,9 @@
 //!
 //! OpenQASM 3 headers, `qubit`/`bit` declarations, and `c = measure q`
 //! assignments become OpenQASM 2. `cnot` becomes `cx` with the same control,
-//! target order. Gate angles accept decimal literals, scientific notation, and
-//! arithmetic `pi` expressions.
+//! target order. Parameterless `s` and `sdg` become `rz(pi/2)` and `rz(-pi/2)`.
+//! Gate angles accept decimal literals, scientific notation, and arithmetic
+//! `pi` expressions.
 
 use thiserror::Error;
 
@@ -309,7 +310,7 @@ fn parse_gate_line(line: &str, registers: &[QuantumReg]) -> Result<Option<QasmGa
     if opcode.is_empty() || args.is_empty() && !call.contains('(') {
         return Ok(None);
     }
-    let (name, parameters) = split_name_and_parameters(call)?;
+    let (name, parameters) = expand_phase_gates(split_name_and_parameters(call)?);
     let qubits = resolve_qubits(args, registers)?;
     Ok(Some(QasmGate {
         name,
@@ -384,6 +385,19 @@ fn canonicalize_gate_name(raw: &str) -> String {
         "cx".to_owned()
     } else {
         name
+    }
+}
+
+/// `s` and `sdg` are virtual Z rotations. Only the parameterless form is rewritten.
+fn expand_phase_gates(gate: (String, Vec<f64>)) -> (String, Vec<f64>) {
+    let (name, parameters) = gate;
+    if !parameters.is_empty() {
+        return (name, parameters);
+    }
+    match name.as_str() {
+        "s" => ("rz".to_owned(), vec![std::f64::consts::FRAC_PI_2]),
+        "sdg" => ("rz".to_owned(), vec![-std::f64::consts::FRAC_PI_2]),
+        _ => (name, parameters),
     }
 }
 
@@ -618,6 +632,31 @@ mod tests {
         );
         let text = canonicalize_qasm("CNOT q[0], q[1];\n").expect("text");
         assert!(text.contains("cx q[0], q[1];"));
+    }
+
+    #[test]
+    fn s_and_sdg_become_virtual_rz() {
+        let s_gate = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nS q[1];\n").expect("s");
+        let rz = qasm_gates("OPENQASM 2.0;\nqreg q[2];\nrz(pi/2) q[1];\n").expect("rz");
+        assert_eq!(s_gate[0].name, "rz");
+        assert_eq!(s_gate[0].qubits[0].index, 1);
+        assert!((s_gate[0].parameters[0] - rz[0].parameters[0]).abs() < 1e-15);
+        assert!((s_gate[0].parameters[0] - std::f64::consts::FRAC_PI_2).abs() < 1e-15);
+        let sdg = qasm_gates("sdg q[0];\n").expect("sdg");
+        let minus = qasm_gates("rz(-pi/2) q[0];\n").expect("minus");
+        assert_eq!(sdg[0].name, "rz");
+        assert_eq!(sdg[0].qubits[0].index, 0);
+        assert!((sdg[0].parameters[0] - minus[0].parameters[0]).abs() < 1e-15);
+        assert!((sdg[0].parameters[0] + std::f64::consts::FRAC_PI_2).abs() < 1e-15);
+        let text = canonicalize_qasm("s q[0];\nsdg q[1];\n").expect("text");
+        assert!(text.contains("rz("));
+        assert!(!text.contains("sdg"));
+        assert!(!text.lines().any(|line| line.starts_with("s ")));
+        let again = canonicalize_qasm(&text).expect("again");
+        assert_eq!(again, text);
+        let sx = qasm_gates("sx q[0];\n").expect("sx");
+        assert_eq!(sx[0].name, "sx");
+        assert!(sx[0].parameters.is_empty());
     }
 
     #[test]
