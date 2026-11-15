@@ -14,6 +14,8 @@ A primary job is one histogram:
 
 `hardware_scales` is absent on this path. An optional offline helper can still attach pre-measured scale rows for benchmark harnesses. Production applications use the histogram form.
 
+`shots` keys are `q0_left`. Character `0` is `q[0]`, character `i` is `q[i]`, and character `n-1` is `q[n-1]`. A Pauli string uses the same index: `"ZII"` places `Z` on `q[0]`, `"IZI"` places `Z` on `q[1]`, and `"IIZ"` places `Z` on `q[2]`. Braket, Cirq, and pytket histograms already use this order. Qiskit `get_counts()` stores `q[0]` in the last character; pass `bit_order="qiskit"` and the client reverses each key before the object is sealed.
+
 ## Calibration card
 
 Present only on the calibrated arm. The zero-telemetry arm omits the object.

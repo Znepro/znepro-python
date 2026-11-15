@@ -1,5 +1,7 @@
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
+
+BitOrder = Literal["q0_left", "q0_right", "braket", "qiskit", "cirq", "pytket"]
 
 __version__: str
 DEFAULT_BASE_URL: str
@@ -14,6 +16,14 @@ def open_envelope(blob: bytes, key_hex_or_b64: str | bytes) -> bytes: ...
 def canonical_job_bytes(payload_json: str) -> bytes: ...
 def canonicalize_qasm(qasm: str) -> str: ...
 def qasm_gates(qasm: str) -> list[tuple[str, list[int], list[float]]]: ...
+def normalize_counts_bit_order(
+    counts: Mapping[str, int],
+    bit_order: BitOrder = "q0_left",
+    *,
+    num_qubits: int | None = None,
+) -> dict[str, int]: ...
+def counts_from_qiskit(source: Any, *, num_qubits: int | None = None) -> dict[str, int]: ...
+def counts_from_braket(source: Any, *, num_qubits: int | None = None) -> dict[str, int]: ...
 PATH_CLIENT_TASK_INIT: str
 PATH_CLIENT_TASK_COMMIT: str
 PATH_TASKS: str
@@ -78,6 +88,7 @@ class ZNEProClient:
         layout: Any = None,
         clip_box: bool | None = None,
         backend_name: str | None = None,
+        bit_order: BitOrder = "q0_left",
     ) -> str: ...
     @staticmethod
     def build_histogram_job_json(
@@ -91,6 +102,7 @@ class ZNEProClient:
         observable: str | None = None,
         observables: Sequence[str] | None = None,
         shots: int | None = None,
+        bit_order: BitOrder = "q0_left",
     ) -> str: ...
     @staticmethod
     def build_multi_scale_job_json(
@@ -103,6 +115,7 @@ class ZNEProClient:
         counts: Mapping[str, int] | None = None,
         calibration: HardwareCalibration | None = None,
         layout: Any = None,
+        bit_order: BitOrder = "q0_left",
     ) -> str: ...
     def create_ticket(
         self,
@@ -134,6 +147,7 @@ class ZNEProClient:
         hardware_backend: str | None = None,
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
+        bit_order: BitOrder = "q0_left",
     ) -> dict[str, Any]: ...
     def submit_job(
         self,
@@ -150,6 +164,7 @@ class ZNEProClient:
         poll_interval_s: float = 1.0,
         clip_box: bool | None = None,
         backend_name: str | None = None,
+        bit_order: BitOrder = "q0_left",
     ) -> dict[str, Any]: ...
     def mitigate_json(
         self,
@@ -159,6 +174,7 @@ class ZNEProClient:
         hardware_backend: str | None = None,
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
+        bit_order: BitOrder = "q0_left",
     ) -> str: ...
     def mitigate(
         self,
@@ -173,4 +189,5 @@ class ZNEProClient:
         hardware_backend: str | None = None,
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
+        bit_order: BitOrder = "q0_left",
     ) -> Any: ...

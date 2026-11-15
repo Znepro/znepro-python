@@ -2,7 +2,7 @@
 
 One hardware execution becomes one R2 ticket. The client sends OpenQASM, the measured bitstring histogram, the target observable, and an optional calibration card. The service performs single-run mitigation. Callers do not fold the circuit and do not submit a multi-scale sweep for a production job.
 
-The default API host is `https://api.znepro.com`.
+The default API host is `https://api.znepro.com`. Histogram character `i` is `q[i]` (`q0_left`). Pauli index `i` in `"ZII"` is the same qubit. Pass `bit_order="qiskit"` when `counts` come from `get_counts()`.
 
 ## Python
 

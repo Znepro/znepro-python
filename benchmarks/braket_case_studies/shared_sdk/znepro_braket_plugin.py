@@ -219,7 +219,7 @@ def correlator_shots(expectation: float, total: int, width: int, qubits: tuple[i
     def key(ones: set[int]) -> str:
         chars = ["0"] * width
         for qubit in ones:
-            chars[width - 1 - qubit] = "1"
+            chars[qubit] = "1"
         return "".join(chars)
 
     return {

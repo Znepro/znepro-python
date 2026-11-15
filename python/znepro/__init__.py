@@ -1,4 +1,8 @@
-"""Official Python client and multi-hardware calibration SDK for ZNEPro."""
+"""Official Python client and multi-hardware calibration SDK for ZNEPro.
+
+Wire histograms use ``q0_left``: ``bitstring[0]`` is ``q[0]``, ``bitstring[i]``
+is ``q[i]``, and Pauli index ``i`` (``"ZII"`` places ``Z`` on ``q[0]``) is ``q[i]``.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +11,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from znepro import _core
@@ -22,7 +26,7 @@ from znepro._envelope import open_envelope, seal_envelope
 
 HardwareCalibration = _core.HardwareCalibration
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 DEFAULT_BASE_URL = "https://api.znepro.com"
 USER_AGENT = f"znepro-sdk/{__version__}"
 _TERMINAL_FAILURES = {"FAILED", "ERROR", "TASK_FAILED", "TASK_ERROR"}
@@ -75,8 +79,154 @@ def _storage_headers(extra: Mapping[str, str] | None) -> dict[str, str]:
     return headers
 
 
+BitOrder = Literal["q0_left", "q0_right", "braket", "qiskit", "cirq", "pytket"]
+_Q0_LEFT_ORDERS = {"q0_left", "braket", "cirq", "pytket"}
+_Q0_RIGHT_ORDERS = {"q0_right", "qiskit"}
+
+
+def _reverse_keys(bit_order: str) -> bool:
+    order = str(bit_order).strip().lower()
+    if order in _Q0_LEFT_ORDERS:
+        return False
+    if order in _Q0_RIGHT_ORDERS:
+        return True
+    raise ValueError(f"unknown bit_order {bit_order!r}")
+
+
+def normalize_counts_bit_order(
+    counts: Mapping[str, int],
+    bit_order: BitOrder = "q0_left",
+    *,
+    num_qubits: int | None = None,
+) -> dict[str, int]:
+    """Return a ``q0_left`` histogram.
+
+    ``bitstring[0]`` is ``q[0]`` and ``bitstring[i]`` is ``q[i]``. ``"q0_left"``,
+    ``"braket"``, ``"cirq"``, and ``"pytket"`` keep key order. ``"q0_right"`` and
+    ``"qiskit"`` reverse each key. Spaces in a key are removed first, so a
+    Qiskit multi-register key ``"0 10"`` becomes ``"010"`` before that reversal.
+    Every key must be the same width of ``0``/``1`` characters. When
+    ``num_qubits`` is set, that width must equal it.
+    """
+    reverse = _reverse_keys(bit_order)
+    if not counts:
+        raise ValueError("counts histogram must be non-empty")
+    expected = None if num_qubits is None else int(num_qubits)
+    if expected is not None and expected < 1:
+        raise ValueError("num_qubits must be positive")
+    normalized: dict[str, int] = {}
+    width: int | None = expected
+    for raw_key, raw_count in counts.items():
+        original = str(raw_key)
+        key = "".join(original.split())
+        if not key or any(mark not in "01" for mark in key):
+            raise ValueError(f"invalid shot key {original!r}")
+        if width is None:
+            width = len(key)
+        elif len(key) != width:
+            raise ValueError(f"shot key {original!r} has width {len(key)}, expected {width}")
+        count = int(raw_count)
+        if count < 0:
+            raise ValueError(f"shot count for {original!r} is negative")
+        if reverse:
+            key = key[::-1]
+        normalized[key] = normalized.get(key, 0) + count
+    return normalized
+
+
+def _measured_qubit_count(qasm: str) -> int | None:
+    """Number of measured qubits when the circuit states it, otherwise ``None``."""
+    try:
+        text = canonicalize_qasm(qasm)
+    except ValueError:
+        text = qasm
+    lengths: dict[str, int] = {}
+    for line in text.splitlines():
+        code = line.split("//", 1)[0].strip().rstrip(";").strip()
+        parts = code.split()
+        if len(parts) != 2 or parts[0].lower() != "qreg" or "[" not in parts[1]:
+            continue
+        name, _, size = parts[1].partition("[")
+        if size.endswith("]"):
+            try:
+                lengths[name] = int(size[:-1])
+            except ValueError:
+                continue
+    measured: set[tuple[str, int]] = set()
+    found = False
+    for line in text.splitlines():
+        code = line.split("//", 1)[0].strip().rstrip(";").strip()
+        if not code.lower().startswith("measure"):
+            continue
+        found = True
+        qubit = code[len("measure") :].strip().split("->", 1)[0].strip()
+        if "[" in qubit and qubit.endswith("]"):
+            name, _, index = qubit.partition("[")
+            try:
+                measured.add((name, int(index[:-1])))
+            except ValueError:
+                return None
+            continue
+        width = lengths.get(qubit)
+        if width is None:
+            return None
+        measured.update((qubit, index) for index in range(width))
+    if not found:
+        return None
+    return len(measured)
+
+
+def _coerce_counts(source: Any) -> Mapping[str, int]:
+    if isinstance(source, Mapping):
+        return source
+    getter = getattr(source, "get_counts", None)
+    if callable(getter):
+        counts = getter()
+        if isinstance(counts, Mapping):
+            return counts
+    counts = getattr(source, "measurement_counts", None)
+    if isinstance(counts, Mapping):
+        return counts
+    raise TypeError("counts source must be a mapping or expose get_counts()/measurement_counts")
+
+
+def counts_from_qiskit(source: Any, *, num_qubits: int | None = None) -> dict[str, int]:
+    """Map a Qiskit ``Result.get_counts()`` histogram onto ``q0_left``.
+
+    ``get_counts()`` stores ``q[0]`` in the last character. This helper reverses
+    each key so ``bitstring[0]`` is ``q[0]``.
+    """
+    return normalize_counts_bit_order(_coerce_counts(source), "qiskit", num_qubits=num_qubits)
+
+
+def counts_from_braket(source: Any, *, num_qubits: int | None = None) -> dict[str, int]:
+    """Map a Braket ``measurement_counts`` histogram onto ``q0_left``.
+
+    Braket keys already store ``q[0]`` in ``bitstring[0]``, so the key order is kept.
+    """
+    return normalize_counts_bit_order(_coerce_counts(source), "braket", num_qubits=num_qubits)
+
+
+def _normalize_payload_bit_order(payload_json: str, bit_order: BitOrder) -> str:
+    document = json.loads(payload_json)
+    if not isinstance(document, dict):
+        raise ValueError("job payload must be a JSON object")
+    shots = document.get("shots")
+    if not isinstance(shots, dict):
+        _reverse_keys(bit_order)
+        return payload_json
+    qasm = document.get("qasm")
+    width = _measured_qubit_count(qasm) if isinstance(qasm, str) else None
+    document["shots"] = normalize_counts_bit_order(shots, bit_order, num_qubits=width)
+    return json.dumps(document)
+
+
 def extract_from_qiskit(source: Any, layout: Any = None) -> HardwareCalibration:
-    """Extract a calibration card from a Qiskit backend / Target / JSON dump."""
+    """Extract a calibration card from a Qiskit backend / Target / JSON dump.
+
+    Histograms are separate from the card. Pass ``get_counts()`` to
+    :func:`counts_from_qiskit` so ``q[0]`` lands on ``bitstring[0]``.
+    """
     text = qiskit_object_to_json(source)
     return _core.extract_from_qiskit(text, **extract_layout_args(layout))
 
@@ -289,12 +439,17 @@ class ZNEProClient:
         layout: Any = None,
         clip_box: bool | None = None,
         backend_name: str | None = None,
+        bit_order: BitOrder = "q0_left",
     ) -> str:
         """Build a single-run R2 job payload (one hardware histogram) via Rust.
 
         Omits ``hardware_scales``. Pass optional ``calibration`` / ``layout``;
         ``observable`` is recorded at ticket submit time, while ``observables``
         (when given) is serialized as the joint clique label list.
+
+        ``counts`` are normalized to ``q0_left`` (``bitstring[i]`` is ``q[i]``)
+        before serialization. The default ``bit_order="q0_left"`` keeps Braket
+        keys. ``bit_order="qiskit"`` reverses keys from ``get_counts()``.
         """
         _ = layout
         _ = observable  # ticket target is chosen in submit_job / submit_and_wait
@@ -303,9 +458,14 @@ class ZNEProClient:
             labels = [str(x) for x in observables]
         elif observable is not None and str(observable).strip():
             labels = [str(observable).strip()]
+        histogram = normalize_counts_bit_order(
+            counts,
+            bit_order,
+            num_qubits=_measured_qubit_count(qasm),
+        )
         return _core.build_job_request_json(
             qasm,
-            {str(k): int(v) for k, v in counts.items()},
+            histogram,
             observables=labels,
             calibration=calibration,
             clip_box=clip_box,
@@ -325,6 +485,7 @@ class ZNEProClient:
         observable: str | None = None,
         observables: Sequence[str] | None = None,
         shots: int | None = None,
+        bit_order: BitOrder = "q0_left",
     ) -> str:
         """Alias of :meth:`build_job_json` (single-run histogram payload)."""
         return ZNEProClient.build_job_json(
@@ -337,6 +498,7 @@ class ZNEProClient:
             layout=layout,
             clip_box=clip_box,
             backend_name=backend_name,
+            bit_order=bit_order,
         )
 
     @staticmethod
@@ -350,6 +512,7 @@ class ZNEProClient:
         counts: Mapping[str, int] | None = None,
         calibration: HardwareCalibration | None = None,
         layout: Any = None,
+        bit_order: BitOrder = "q0_left",
     ) -> str:
         """Optional offline / benchmark helper for pre-measured multi-scale samples.
 
@@ -362,7 +525,11 @@ class ZNEProClient:
             pauli = {str(k): [float(x) for x in v] for k, v in pauli_expectations.items()}
         hist = None
         if counts is not None:
-            hist = {str(k): int(v) for k, v in counts.items()}
+            hist = normalize_counts_bit_order(
+                counts,
+                bit_order,
+                num_qubits=_measured_qubit_count(qasm),
+            )
         return _core.build_multi_scale_job_json(
             qasm,
             [float(x) for x in noise_scales],
@@ -520,12 +687,17 @@ class ZNEProClient:
         hardware_backend: str | None = None,
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
+        bit_order: BitOrder = "q0_left",
     ) -> dict[str, Any]:
         """Full R2 ticket lifecycle: init → PUT sealed job → commit → poll result.
 
         ``qasm`` inside ``payload_json`` is canonicalized before the object is sealed,
         including raw OpenQASM 3 payloads that skipped ``build_job_json``.
+        ``shots`` keys are normalized to ``q0_left`` (``bitstring[i]`` is ``q[i]``).
+        A payload that is already ``q0_left`` stays unchanged. ``bit_order="qiskit"``
+        reverses keys that still use the ``get_counts()`` character order.
         """
+        payload_json = _normalize_payload_bit_order(payload_json, bit_order)
         wait = self.timeout_s if timeout_s is None else float(timeout_s)
         ticket = self.create_ticket(observable, hardware_backend=hardware_backend)
         upload_url = _ticket_text(ticket, ("upload_presigned_url", "upload_url", "put_url"))
@@ -566,12 +738,14 @@ class ZNEProClient:
         poll_interval_s: float = 1.0,
         clip_box: bool | None = None,
         backend_name: str | None = None,
+        bit_order: BitOrder = "q0_left",
     ) -> dict[str, Any]:
         """Primary API: one hardware run → one R2 ticket → mitigated result.
 
         Pass the measured bitstring ``counts`` (and optional ``calibration``).
-        The service performs single-run mitigation; callers do not fold circuits
-        or submit multi-scale sweeps.
+        ``counts`` are stored ``q0_left``: ``bitstring[i]`` is ``q[i]``, matching
+        Pauli index ``i``. The service performs single-run mitigation; callers
+        do not fold circuits or submit multi-scale sweeps.
         """
         payload = self.build_job_json(
             qasm,
@@ -583,6 +757,7 @@ class ZNEProClient:
             layout=layout,
             clip_box=clip_box,
             backend_name=backend_name,
+            bit_order=bit_order,
         )
         return self.submit_and_wait(
             payload,
@@ -590,6 +765,7 @@ class ZNEProClient:
             hardware_backend=hardware_backend,
             timeout_s=timeout_s,
             poll_interval_s=poll_interval_s,
+            bit_order="q0_left",
         )
 
     def mitigate_json(
@@ -600,14 +776,19 @@ class ZNEProClient:
         hardware_backend: str | None = None,
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
+        bit_order: BitOrder = "q0_left",
     ) -> str:
-        """Submit a pre-built payload through the R2 ticket path and return JSON text."""
+        """Submit a pre-built payload through the R2 ticket path and return JSON text.
+
+        ``bit_order`` rewrites ``shots`` onto ``q0_left`` before the object is sealed.
+        """
         result = self.submit_and_wait(
             payload,
             observable=observable,
             hardware_backend=hardware_backend,
             timeout_s=timeout_s,
             poll_interval_s=poll_interval_s,
+            bit_order=bit_order,
         )
         return json.dumps(result)
 
@@ -624,6 +805,7 @@ class ZNEProClient:
         hardware_backend: str | None = None,
         timeout_s: float | None = None,
         poll_interval_s: float = 1.0,
+        bit_order: BitOrder = "q0_left",
     ) -> Any:
         """Alias of :meth:`submit_job` (single-run primary path)."""
         return self.submit_job(
@@ -637,6 +819,7 @@ class ZNEProClient:
             hardware_backend=hardware_backend,
             timeout_s=timeout_s,
             poll_interval_s=poll_interval_s,
+            bit_order=bit_order,
         )
 
 
@@ -652,6 +835,9 @@ __all__ = [
     "build_neutral_atom_calibration",
     "canonical_job_bytes",
     "canonicalize_qasm",
+    "counts_from_braket",
+    "counts_from_qiskit",
+    "normalize_counts_bit_order",
     "qasm_gates",
     "extract_from_braket",
     "extract_from_cirq",

@@ -1,4 +1,4 @@
-# ZNEPro SDK (`znepro` / `znepro-sdk`) 1.0.2
+# ZNEPro SDK (`znepro` / `znepro-sdk`) 1.0.3
 
 Official open-source client and multi-platform hardware calibration extractor for the **ZNEPro** Quantum Error Mitigation (QEM) service.
 
@@ -12,6 +12,7 @@ Built around a zero-internal-dependency Rust core with native Python `abi3` bind
 
 - **R2 Ticket Workflow:** `POST /api/v1/client/tasks/init` → PUT the job JSON to the returned presigned URL → `POST /api/v1/client/tasks/commit` → poll the result object (or `GET /v1/tasks/{task_id}`). The API bearer is not attached to the presigned storage request.
 - **Single-Run Primary Jobs:** Build one-shot bitstring histograms (`shots`) with optional `hardware_calibration`. Multi-scale `hardware_scales` payloads are optional for offline harnesses only.
+- **Wire histogram (`q0_left`):** `bitstring[0]` is `q[0]`, `bitstring[i]` is `q[i]`, and Pauli index `i` in `"ZII"` is `q[i]`. `bit_order="braket"` keeps keys unchanged. `bit_order="qiskit"` reverses each `get_counts()` key onto that order.
 - **Five Built-in Quantum Hardware Adapters:** IBM Quantum (`Qiskit`), AWS Braket (Rigetti / IonQ / IQM), Google Quantum AI (`Cirq`), Quantinuum & TKET (`pytket`), and Neutral-Atom QPUs (QuEra / Pasqal / Atom Computing).
 - **Automatic Transpile Layout Remapping:** Projects full-chip calibration tables onto the physical-to-logical qubit subset used by a transpiled OpenQASM circuit.
 - **Strict Numerical Sanitization:** Scrubs `NaN`, `Inf`, and non-physical values inside Rust, imputes missing device defaults from calibrated medians, and guarantees deterministic `BTreeMap` JSON serialization.

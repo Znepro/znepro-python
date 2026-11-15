@@ -44,7 +44,8 @@ impl HardwareScalePoint {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ZneproJobRequest {
     pub qasm: String,
-    /// Bitstring histogram (qubit 0 = rightmost character), matching the worker.
+    /// Bitstring histogram in `q0_left` order: character `i` is `q[i]`.
+    /// Pauli index `i` uses the same map (`"ZII"` places `Z` on `q[0]`).
     pub shots: BTreeMap<String, u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub backend_name: Option<String>,

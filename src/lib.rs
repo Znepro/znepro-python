@@ -2,7 +2,8 @@
 //! and black-box job payload builders.
 //!
 //! The primary wire shape is a **single hardware execution** (OpenQASM +
-//! bitstring histogram in `shots`, optional `hardware_calibration`). Omitting
+//! bitstring histogram in `shots`, optional `hardware_calibration`).
+//! Histogram character `i` is `q[i]` (`q0_left`). Omitting
 //! `hardware_scales` selects the service's single-run mitigation path. This
 //! crate has no solver dependencies.
 

@@ -438,14 +438,14 @@ def test_submit_job_scopes_bearer_token_to_api_origin():
         if url.startswith("https://api.znepro.com/"):
             assert headers.get("authorization") == "Bearer test"
             assert headers.get("accept") == "application/json"
-            assert headers.get("user-agent") == "znepro-sdk/1.0.2"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.3"
             assert "python-urllib" not in headers["user-agent"].lower()
             assert credential_names == ["authorization"]
         else:
             assert "cloudflarestorage.com" in url
             assert method in {"PUT", "GET"}
             assert credential_names == []
-            assert headers.get("user-agent") == "znepro-sdk/1.0.2"
+            assert headers.get("user-agent") == "znepro-sdk/1.0.3"
             assert "X-Amz-Signature" in url
     puts = [(headers, body) for method, url, headers, body in seen if method == "PUT"]
     assert len(puts) == 2
@@ -576,7 +576,7 @@ def test_openqasm3_braket_program_normalization():
             ).encode()
         if method == "PUT" and url == put_url:
             assert "authorization" not in lowered
-            assert lowered.get("user-agent") == "znepro-sdk/1.0.2"
+            assert lowered.get("user-agent") == "znepro-sdk/1.0.3"
             uploaded.append(json.loads(open_envelope(body, _TICKET_KEY))["qasm"])
             return 200, b""
         if method == "POST" and url.endswith("/api/v1/client/tasks/commit"):

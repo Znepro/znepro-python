@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- Wire histograms use `q0_left`: character `i` is `q[i]`, and Pauli index `i` (`"ZII"`) is `q[i]`.
+- `bit_order` on `build_job_json`, `submit_job`, `submit_and_wait`, and `mitigate_json` keeps Braket keys and reverses Qiskit `get_counts()` keys before upload.
+- `counts_from_qiskit` applies that reversal. `counts_from_braket` keeps `q0_left`.
+
 ## 1.0.2
 
 - AWS Braket OpenQASM 3 programs (`OPENQASM 3.0`, `qubit[N]` / `bit[N]`, `c = measure q`, `cnot`, `ry(3*pi/4)`) are rewritten to OpenQASM 2 before upload.

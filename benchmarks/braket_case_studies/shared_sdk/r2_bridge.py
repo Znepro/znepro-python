@@ -123,21 +123,21 @@ def map_shot_histogram(
     permutation: list[int],
     flip_qubit: int | None,
 ) -> dict[str, int]:
-    """Move each bit to its virtual qubit. One flipped well reverses the parity."""
+    """Move each bit to its virtual qubit. Character ``i`` is ``q[i]``."""
     mapped: dict[str, int] = {}
     for key, count in shots.items():
         if count < 0 or any(mark not in "01" for mark in key):
             raise ValueError(f"invalid shot key {key!r}")
-        padded = key.rjust(width, "0")
+        padded = key.ljust(width, "0")
         if len(padded) != width:
             raise ValueError(f"shot key {key!r} is wider than q[{width}]")
-        old = [padded[width - 1 - qubit] for qubit in range(width)]
+        old = list(padded)
         if flip_qubit is not None:
             old[flip_qubit] = "1" if old[flip_qubit] == "0" else "0"
         moved = ["0"] * width
         for qubit, bit in enumerate(old):
             moved[permutation[qubit]] = bit
-        blinded = "".join(moved[width - 1 - qubit] for qubit in range(width))
+        blinded = "".join(moved)
         mapped[blinded] = mapped.get(blinded, 0) + count
     return mapped
 
