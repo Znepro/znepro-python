@@ -234,7 +234,6 @@ let multi = ZneproJobRequest::multi_scale(
 | `python/znepro/` | `ZNEProClient` and the vendor-object bridge |
 | `examples/` | Customer quickstarts and the public Qiskit benchmark script |
 | `benchmarks/braket_case_studies/` | Recorded Braket studies and public receipts |
-| `benchmarks/rigetti/` | Recorded Rigetti Cepheus-1-108Q evaluation |
 | `tests/` | Adapter security tests, Python bindings, customer ticket tests, leak scan |
 
 ## License

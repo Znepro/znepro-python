@@ -34,22 +34,6 @@ def _words() -> list[str]:
     ]
 
 
-def _marker_present(text: str, word: str) -> bool:
-    if not word or any(ch not in "0123456789." for ch in word):
-        return word in text
-    start = 0
-    while True:
-        found = text.find(word, start)
-        if found < 0:
-            return False
-        before = text[found - 1] if found else ""
-        after_at = found + len(word)
-        after = text[after_at] if after_at < len(text) else ""
-        if not before.isdigit() and not after.isdigit():
-            return True
-        start = found + 1
-
-
 def _tracked() -> list[str]:
     out = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True)
     return [line for line in out.splitlines() if line]
@@ -77,7 +61,7 @@ def test_tracked_tree_has_no_private_markers() -> None:
                 continue
         text = path.read_bytes().decode("utf-8", errors="ignore").lower()
         for word in blocked:
-            if _marker_present(text, word.lower()):
+            if word.lower() in text:
                 failures.append(f"{rel}: {word}")
         for mark in identity:
             if mark.lower() in text:
