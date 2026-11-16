@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "diag_positive_zz_4q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r2/diag_positive_zz_4q/g0/ZZII",
+  "mitigated_expectation": 0.7944272388373235,
+  "observable": "ZZII",
+  "round": 2,
+  "status": "COMPLETED",
+  "target_observable": "ZZII",
+  "total_shots": 1000
+}

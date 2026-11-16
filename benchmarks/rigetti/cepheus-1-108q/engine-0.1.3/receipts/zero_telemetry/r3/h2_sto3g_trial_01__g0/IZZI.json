@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "h2_sto3g_trial_01",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/h2_sto3g_trial_01/g0/IZZI",
+  "mitigated_expectation": -0.7191265168293554,
+  "observable": "IZZI",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "IZZI",
+  "total_shots": 1000
+}

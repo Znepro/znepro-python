@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "ising_6_mag_step1",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r2/ising_6_mag_step1/g0/IIIIIZ",
+  "mitigated_expectation": -0.05952306446556848,
+  "observable": "IIIIIZ",
+  "round": 2,
+  "status": "COMPLETED",
+  "target_observable": "IIIIIZ",
+  "total_shots": 1000
+}

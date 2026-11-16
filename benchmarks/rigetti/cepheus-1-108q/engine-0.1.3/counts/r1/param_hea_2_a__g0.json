@@ -1,0 +1,17 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "param_hea_2_a",
+  "counts": {
+    "00": 853,
+    "01": 96,
+    "10": 17,
+    "11": 34
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r1/param_hea_2_a/g0",
+  "qasm_sha256": "4c3f2ba38a386bc325c3068d31dbfb827bbe6897768fba1fdbb5eb52aa0a6b15",
+  "round": 1,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

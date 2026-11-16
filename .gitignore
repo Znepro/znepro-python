@@ -33,3 +33,4 @@ python/znepro/_core*.so
 python/znepro/_core*.dylib
 python/znepro/_core*.pyd
 .DS_Store
+benchmarks/rigetti/**/reproduced/

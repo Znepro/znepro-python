@@ -1,0 +1,17 @@
+{
+  "arm": "historical_partial_card",
+  "calibrated_qubit_count": 4,
+  "calibration_applied": true,
+  "calibration_sha256": "211d016ab7a9d021ade79692e008f675a7060c850b45bc31fc87f2c49f41600f",
+  "card_name": "historical partial card",
+  "case_id": "h2_sto3g_trial_00",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/h2_sto3g_trial_00/g0/ZZII",
+  "mitigated_expectation": -0.9964450190447203,
+  "observable": "ZZII",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "ZZII",
+  "total_shots": 1000
+}

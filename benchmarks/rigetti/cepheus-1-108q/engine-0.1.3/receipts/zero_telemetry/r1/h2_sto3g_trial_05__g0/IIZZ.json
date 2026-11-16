@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "h2_sto3g_trial_05",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r1/h2_sto3g_trial_05/g0/IIZZ",
+  "mitigated_expectation": -0.8740161636544983,
+  "observable": "IIZZ",
+  "round": 1,
+  "status": "COMPLETED",
+  "target_observable": "IIZZ",
+  "total_shots": 1000
+}

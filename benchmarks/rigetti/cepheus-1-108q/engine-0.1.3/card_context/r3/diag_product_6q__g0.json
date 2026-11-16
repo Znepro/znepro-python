@@ -1,0 +1,154 @@
+{
+  "card_name": "historical partial card",
+  "case_id": "diag_product_6q",
+  "field_ages": [
+    {
+      "age_at_task_start_hours": 2.0546175,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:19:47Z",
+      "physical_qubit": 20,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0017394819977734066
+    },
+    {
+      "age_at_task_start_hours": 2.0510063888888888,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:20:00Z",
+      "physical_qubit": 20,
+      "sdk_field": "t1_us",
+      "sdk_value": 27.08843004595174
+    },
+    {
+      "age_at_task_start_hours": 2.052395277777778,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:19:55Z",
+      "physical_qubit": 20,
+      "sdk_field": "t2_us",
+      "sdk_value": 8.986920798204068
+    },
+    {
+      "age_at_task_start_hours": 2.0301730555555553,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:15Z",
+      "physical_qubit": 99,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0006154449903381654
+    },
+    {
+      "age_at_task_start_hours": 2.0265619444444445,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:28Z",
+      "physical_qubit": 99,
+      "sdk_field": "t1_us",
+      "sdk_value": 37.311324196931395
+    },
+    {
+      "age_at_task_start_hours": 2.0271174999999997,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:26Z",
+      "physical_qubit": 99,
+      "sdk_field": "t2_us",
+      "sdk_value": 32.55754470976591
+    },
+    {
+      "age_at_task_start_hours": 2.059339722222222,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-16T14:19:30Z",
+      "physical_qubit": 0,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.00287548767361423
+    },
+    {
+      "age_at_task_start_hours": 2.061561944444444,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-16T14:19:22Z",
+      "physical_qubit": 0,
+      "sdk_field": "t1_us",
+      "sdk_value": 30.88518291227693
+    },
+    {
+      "age_at_task_start_hours": 2.0596175,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-16T14:19:29Z",
+      "physical_qubit": 0,
+      "sdk_field": "t2_us",
+      "sdk_value": 16.79722426728425
+    },
+    {
+      "age_at_task_start_hours": 2.020728611111111,
+      "logical_qubit": 3,
+      "measurement_time": "2026-11-16T14:21:49Z",
+      "physical_qubit": 81,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0005840640241854267
+    },
+    {
+      "age_at_task_start_hours": 2.0187841666666664,
+      "logical_qubit": 3,
+      "measurement_time": "2026-11-16T14:21:56Z",
+      "physical_qubit": 81,
+      "sdk_field": "t1_us",
+      "sdk_value": 52.381597161810234
+    },
+    {
+      "age_at_task_start_hours": 2.0204508333333333,
+      "logical_qubit": 3,
+      "measurement_time": "2026-11-16T14:21:50Z",
+      "physical_qubit": 81,
+      "sdk_field": "t2_us",
+      "sdk_value": 17.045338081889128
+    },
+    {
+      "age_at_task_start_hours": 2.0546175,
+      "logical_qubit": 4,
+      "measurement_time": "2026-11-16T14:19:47Z",
+      "physical_qubit": 90,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0005933474089944157
+    },
+    {
+      "age_at_task_start_hours": 2.050450833333333,
+      "logical_qubit": 4,
+      "measurement_time": "2026-11-16T14:20:02Z",
+      "physical_qubit": 90,
+      "sdk_field": "t1_us",
+      "sdk_value": 59.11300600391911
+    },
+    {
+      "age_at_task_start_hours": 2.0515619444444444,
+      "logical_qubit": 4,
+      "measurement_time": "2026-11-16T14:19:58Z",
+      "physical_qubit": 90,
+      "sdk_field": "t2_us",
+      "sdk_value": 22.34079261120847
+    },
+    {
+      "age_at_task_start_hours": 2.038228611111111,
+      "logical_qubit": 5,
+      "measurement_time": "2026-11-16T14:20:46Z",
+      "physical_qubit": 34,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0008523445952863806
+    },
+    {
+      "age_at_task_start_hours": 2.036839722222222,
+      "logical_qubit": 5,
+      "measurement_time": "2026-11-16T14:20:51Z",
+      "physical_qubit": 34,
+      "sdk_field": "t1_us",
+      "sdk_value": 44.41155983836431
+    },
+    {
+      "age_at_task_start_hours": 2.0351730555555556,
+      "logical_qubit": 5,
+      "measurement_time": "2026-11-16T14:20:57Z",
+      "physical_qubit": 34,
+      "sdk_field": "t2_us",
+      "sdk_value": 14.82255231688434
+    }
+  ],
+  "group_id": "g0",
+  "local_id": "r3/diag_product_6q/g0",
+  "round": 3,
+  "temporal_validity": null
+}

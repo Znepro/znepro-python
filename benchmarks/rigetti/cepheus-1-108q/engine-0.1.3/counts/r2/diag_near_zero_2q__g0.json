@@ -1,0 +1,17 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "diag_near_zero_2q",
+  "counts": {
+    "00": 493,
+    "01": 17,
+    "10": 483,
+    "11": 7
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r2/diag_near_zero_2q/g0",
+  "qasm_sha256": "3beb3b15b5f022e2a90934c3f691018e97026663ddb64c2df68ef3cb1cb41cdc",
+  "round": 2,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

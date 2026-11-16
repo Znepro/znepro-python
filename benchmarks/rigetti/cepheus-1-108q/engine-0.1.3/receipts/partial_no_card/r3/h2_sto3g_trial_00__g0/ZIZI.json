@@ -1,0 +1,14 @@
+{
+  "arm": "no_card",
+  "calibration_applied": false,
+  "case_id": "h2_sto3g_trial_00",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/h2_sto3g_trial_00/g0/ZIZI",
+  "mitigated_expectation": 0.7704251686167262,
+  "observable": "ZIZI",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "ZIZI",
+  "total_shots": 1000
+}

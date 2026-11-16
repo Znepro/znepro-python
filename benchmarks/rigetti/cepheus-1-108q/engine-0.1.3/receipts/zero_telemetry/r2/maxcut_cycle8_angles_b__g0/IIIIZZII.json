@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "maxcut_cycle8_angles_b",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r2/maxcut_cycle8_angles_b/g0/IIIIZZII",
+  "mitigated_expectation": -0.37931051528562876,
+  "observable": "IIIIZZII",
+  "round": 2,
+  "status": "COMPLETED",
+  "target_observable": "IIIIZZII",
+  "total_shots": 1000
+}

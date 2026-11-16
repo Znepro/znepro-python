@@ -1,0 +1,106 @@
+{
+  "card_name": "historical partial card",
+  "case_id": "h2_sto3g_trial_00",
+  "field_ages": [
+    {
+      "age_at_task_start_hours": 14.565372222222221,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-15T14:20:36Z",
+      "physical_qubit": 9,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0012911524416211462
+    },
+    {
+      "age_at_task_start_hours": 14.563983333333333,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-15T14:20:41Z",
+      "physical_qubit": 9,
+      "sdk_field": "t1_us",
+      "sdk_value": 50.76366182299452
+    },
+    {
+      "age_at_task_start_hours": 14.56176111111111,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-15T14:20:49Z",
+      "physical_qubit": 9,
+      "sdk_field": "t2_us",
+      "sdk_value": 18.283984105416096
+    },
+    {
+      "age_at_task_start_hours": 14.557594444444444,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-15T14:21:04Z",
+      "physical_qubit": 99,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0006911540566180152
+    },
+    {
+      "age_at_task_start_hours": 14.553983333333333,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-15T14:21:17Z",
+      "physical_qubit": 99,
+      "sdk_field": "t1_us",
+      "sdk_value": 33.05844785939094
+    },
+    {
+      "age_at_task_start_hours": 14.55426111111111,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-15T14:21:16Z",
+      "physical_qubit": 99,
+      "sdk_field": "t2_us",
+      "sdk_value": 16.0447606729619
+    },
+    {
+      "age_at_task_start_hours": 14.580372222222222,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-15T14:19:42Z",
+      "physical_qubit": 90,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0005867090093234495
+    },
+    {
+      "age_at_task_start_hours": 14.57926111111111,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-15T14:19:46Z",
+      "physical_qubit": 90,
+      "sdk_field": "t1_us",
+      "sdk_value": 49.25113615472654
+    },
+    {
+      "age_at_task_start_hours": 14.577594444444443,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-15T14:19:52Z",
+      "physical_qubit": 90,
+      "sdk_field": "t2_us",
+      "sdk_value": 22.709626120054335
+    },
+    {
+      "age_at_task_start_hours": 14.548705555555555,
+      "logical_qubit": 3,
+      "measurement_time": "2026-11-15T14:21:36Z",
+      "physical_qubit": 81,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0009858085163482189
+    },
+    {
+      "age_at_task_start_hours": 14.545372222222221,
+      "logical_qubit": 3,
+      "measurement_time": "2026-11-15T14:21:48Z",
+      "physical_qubit": 81,
+      "sdk_field": "t1_us",
+      "sdk_value": 46.79090861259283
+    },
+    {
+      "age_at_task_start_hours": 14.54676111111111,
+      "logical_qubit": 3,
+      "measurement_time": "2026-11-15T14:21:43Z",
+      "physical_qubit": 81,
+      "sdk_field": "t2_us",
+      "sdk_value": 13.97510129375057
+    }
+  ],
+  "group_id": "g3",
+  "local_id": "r2/h2_sto3g_trial_00/g3",
+  "round": 2,
+  "temporal_validity": null
+}

@@ -1,0 +1,17 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "ising_2_corr_step2",
+  "counts": {
+    "00": 153,
+    "01": 169,
+    "10": 356,
+    "11": 322
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r1/ising_2_corr_step2/g0",
+  "qasm_sha256": "8bba94df2c3fd689180957871cc6088db624ae07f5a350873f3c5c9346a12eb2",
+  "round": 1,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

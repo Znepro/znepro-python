@@ -1,0 +1,17 @@
+{
+  "arm": "historical_partial_card",
+  "calibrated_qubit_count": 3,
+  "calibration_applied": true,
+  "calibration_sha256": "e79c183bff754d291c09d4f29c6c4e8112e6b4b70f297c50bd25b4f79208ce5b",
+  "card_name": "historical partial card",
+  "case_id": "diag_asymmetric_3q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r2/diag_asymmetric_3q/g0/ZII",
+  "mitigated_expectation": 0.8665171295402782,
+  "observable": "ZII",
+  "round": 2,
+  "status": "COMPLETED",
+  "target_observable": "ZII",
+  "total_shots": 1000
+}

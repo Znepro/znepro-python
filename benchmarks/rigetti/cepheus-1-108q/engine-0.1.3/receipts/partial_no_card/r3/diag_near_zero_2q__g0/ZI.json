@@ -1,0 +1,14 @@
+{
+  "arm": "no_card",
+  "calibration_applied": false,
+  "case_id": "diag_near_zero_2q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/diag_near_zero_2q/g0/ZI",
+  "mitigated_expectation": -0.03230010196220621,
+  "observable": "ZI",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "ZI",
+  "total_shots": 1000
+}

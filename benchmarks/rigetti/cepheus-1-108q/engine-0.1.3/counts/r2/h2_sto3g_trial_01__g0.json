@@ -1,0 +1,26 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "h2_sto3g_trial_01",
+  "counts": {
+    "0000": 6,
+    "0001": 1,
+    "0010": 24,
+    "0100": 2,
+    "0101": 1,
+    "0110": 15,
+    "0111": 1,
+    "1000": 42,
+    "1010": 813,
+    "1011": 16,
+    "1100": 3,
+    "1110": 75,
+    "1111": 1
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r2/h2_sto3g_trial_01/g0",
+  "qasm_sha256": "7d32e7e884fad524597d62b1e9b0409b343a942c0d20f3967170fabee47310b2",
+  "round": 2,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

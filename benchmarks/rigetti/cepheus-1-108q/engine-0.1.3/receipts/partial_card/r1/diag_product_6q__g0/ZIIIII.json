@@ -1,0 +1,17 @@
+{
+  "arm": "historical_partial_card",
+  "calibrated_qubit_count": 6,
+  "calibration_applied": true,
+  "calibration_sha256": "933e59c39d57ca55227cc3e823645fd979266abb3de7403f5ff9da54583c8fe3",
+  "card_name": "historical partial card",
+  "case_id": "diag_product_6q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r1/diag_product_6q/g0/ZIIIII",
+  "mitigated_expectation": 0.910646069745785,
+  "observable": "ZIIIII",
+  "round": 1,
+  "status": "COMPLETED",
+  "target_observable": "ZIIIII",
+  "total_shots": 1000
+}

@@ -1,0 +1,29 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "ising_4_end_step3",
+  "counts": {
+    "0000": 39,
+    "0001": 3,
+    "0010": 3,
+    "0011": 3,
+    "0100": 30,
+    "0101": 8,
+    "0110": 8,
+    "0111": 4,
+    "1000": 87,
+    "1001": 19,
+    "1010": 23,
+    "1011": 8,
+    "1100": 557,
+    "1101": 101,
+    "1110": 63,
+    "1111": 44
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r1/ising_4_end_step3/g0",
+  "qasm_sha256": "fa0ea1fc25dfbc1eb2dd20330159e4e458fc0cbb800353921cdb3f76780751e2",
+  "round": 1,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

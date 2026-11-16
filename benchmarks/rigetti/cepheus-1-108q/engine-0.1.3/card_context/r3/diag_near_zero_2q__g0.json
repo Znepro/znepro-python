@@ -1,0 +1,58 @@
+{
+  "card_name": "historical partial card",
+  "case_id": "diag_near_zero_2q",
+  "field_ages": [
+    {
+      "age_at_task_start_hours": 2.0539844444444446,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:19:47Z",
+      "physical_qubit": 20,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0017394819977734066
+    },
+    {
+      "age_at_task_start_hours": 2.0503733333333334,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:20:00Z",
+      "physical_qubit": 20,
+      "sdk_field": "t1_us",
+      "sdk_value": 27.08843004595174
+    },
+    {
+      "age_at_task_start_hours": 2.051762222222222,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:19:55Z",
+      "physical_qubit": 20,
+      "sdk_field": "t2_us",
+      "sdk_value": 8.986920798204068
+    },
+    {
+      "age_at_task_start_hours": 2.02954,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:15Z",
+      "physical_qubit": 99,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0006154449903381654
+    },
+    {
+      "age_at_task_start_hours": 2.025928888888889,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:28Z",
+      "physical_qubit": 99,
+      "sdk_field": "t1_us",
+      "sdk_value": 37.311324196931395
+    },
+    {
+      "age_at_task_start_hours": 2.0264844444444443,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:26Z",
+      "physical_qubit": 99,
+      "sdk_field": "t2_us",
+      "sdk_value": 32.55754470976591
+    }
+  ],
+  "group_id": "g0",
+  "local_id": "r3/diag_near_zero_2q/g0",
+  "round": 3,
+  "temporal_validity": null
+}

@@ -1,0 +1,14 @@
+{
+  "arm": "no_card",
+  "calibration_applied": false,
+  "case_id": "diag_product_6q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/diag_product_6q/g0/ZIIIII",
+  "mitigated_expectation": 0.9107024312303108,
+  "observable": "ZIIIII",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "ZIIIII",
+  "total_shots": 1000
+}

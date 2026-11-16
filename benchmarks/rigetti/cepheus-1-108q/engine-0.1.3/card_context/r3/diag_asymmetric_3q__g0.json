@@ -1,0 +1,82 @@
+{
+  "card_name": "historical partial card",
+  "case_id": "diag_asymmetric_3q",
+  "field_ages": [
+    {
+      "age_at_task_start_hours": 2.0534691666666665,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:19:47Z",
+      "physical_qubit": 20,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0017394819977734066
+    },
+    {
+      "age_at_task_start_hours": 2.0498580555555552,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:20:00Z",
+      "physical_qubit": 20,
+      "sdk_field": "t1_us",
+      "sdk_value": 27.08843004595174
+    },
+    {
+      "age_at_task_start_hours": 2.0512469444444443,
+      "logical_qubit": 0,
+      "measurement_time": "2026-11-16T14:19:55Z",
+      "physical_qubit": 20,
+      "sdk_field": "t2_us",
+      "sdk_value": 8.986920798204068
+    },
+    {
+      "age_at_task_start_hours": 2.029024722222222,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:15Z",
+      "physical_qubit": 99,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.0006154449903381654
+    },
+    {
+      "age_at_task_start_hours": 2.025413611111111,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:28Z",
+      "physical_qubit": 99,
+      "sdk_field": "t1_us",
+      "sdk_value": 37.311324196931395
+    },
+    {
+      "age_at_task_start_hours": 2.0259691666666666,
+      "logical_qubit": 1,
+      "measurement_time": "2026-11-16T14:21:26Z",
+      "physical_qubit": 99,
+      "sdk_field": "t2_us",
+      "sdk_value": 32.55754470976591
+    },
+    {
+      "age_at_task_start_hours": 2.058191388888889,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-16T14:19:30Z",
+      "physical_qubit": 0,
+      "sdk_field": "error_1q",
+      "sdk_value": 0.00287548767361423
+    },
+    {
+      "age_at_task_start_hours": 2.060413611111111,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-16T14:19:22Z",
+      "physical_qubit": 0,
+      "sdk_field": "t1_us",
+      "sdk_value": 30.88518291227693
+    },
+    {
+      "age_at_task_start_hours": 2.0584691666666664,
+      "logical_qubit": 2,
+      "measurement_time": "2026-11-16T14:19:29Z",
+      "physical_qubit": 0,
+      "sdk_field": "t2_us",
+      "sdk_value": 16.79722426728425
+    }
+  ],
+  "group_id": "g0",
+  "local_id": "r3/diag_asymmetric_3q/g0",
+  "round": 3,
+  "temporal_validity": null
+}

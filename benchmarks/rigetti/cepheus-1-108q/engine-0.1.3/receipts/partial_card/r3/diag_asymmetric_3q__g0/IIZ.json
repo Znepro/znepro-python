@@ -1,0 +1,17 @@
+{
+  "arm": "historical_partial_card",
+  "calibrated_qubit_count": 3,
+  "calibration_applied": true,
+  "calibration_sha256": "6c7de79541a44a9bc3794386bc6b2b1abcd70d959e492932d47964f5dc5cef85",
+  "card_name": "historical partial card",
+  "case_id": "diag_asymmetric_3q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/diag_asymmetric_3q/g0/IIZ",
+  "mitigated_expectation": -0.5203900290717408,
+  "observable": "IIZ",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "IIZ",
+  "total_shots": 1000
+}

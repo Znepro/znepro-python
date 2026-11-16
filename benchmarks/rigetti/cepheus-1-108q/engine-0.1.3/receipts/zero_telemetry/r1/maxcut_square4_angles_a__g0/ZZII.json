@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "maxcut_square4_angles_a",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r1/maxcut_square4_angles_a/g0/ZZII",
+  "mitigated_expectation": -0.2188396725963214,
+  "observable": "ZZII",
+  "round": 1,
+  "status": "COMPLETED",
+  "target_observable": "ZZII",
+  "total_shots": 1000
+}

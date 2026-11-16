@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "maxcut_path6_angles_a",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/maxcut_path6_angles_a/g0/IIIIZZ",
+  "mitigated_expectation": 0.03523093413979126,
+  "observable": "IIIIZZ",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "IIIIZZ",
+  "total_shots": 1000
+}

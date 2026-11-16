@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "h2_sto3g_trial_01",
+  "engine_version": "0.1.3",
+  "group_id": "g4",
+  "local_id": "r1/h2_sto3g_trial_01/g4/YYYY",
+  "mitigated_expectation": 0.002001026937754742,
+  "observable": "YYYY",
+  "round": 1,
+  "status": "COMPLETED",
+  "target_observable": "YYYY",
+  "total_shots": 1000
+}

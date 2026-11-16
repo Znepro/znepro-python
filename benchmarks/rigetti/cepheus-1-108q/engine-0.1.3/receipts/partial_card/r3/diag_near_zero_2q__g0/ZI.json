@@ -1,0 +1,17 @@
+{
+  "arm": "historical_partial_card",
+  "calibrated_qubit_count": 2,
+  "calibration_applied": true,
+  "calibration_sha256": "d95febcf105698760a32b1992dc2acbbab4bf0b3d0ea4795edc865fece1e9899",
+  "card_name": "historical partial card",
+  "case_id": "diag_near_zero_2q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/diag_near_zero_2q/g0/ZI",
+  "mitigated_expectation": -0.03205061705324453,
+  "observable": "ZI",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "ZI",
+  "total_shots": 1000
+}

@@ -1,0 +1,21 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "diag_asymmetric_3q",
+  "counts": {
+    "000": 209,
+    "001": 471,
+    "010": 17,
+    "011": 235,
+    "100": 12,
+    "101": 42,
+    "110": 4,
+    "111": 10
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r2/diag_asymmetric_3q/g0",
+  "qasm_sha256": "3bd8fa0a5a6e1a808a686131fb284f2949670c7862b8dddde4ee569a80d8831c",
+  "round": 2,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

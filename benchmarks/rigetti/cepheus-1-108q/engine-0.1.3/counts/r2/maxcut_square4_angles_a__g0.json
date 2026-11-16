@@ -1,0 +1,29 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "maxcut_square4_angles_a",
+  "counts": {
+    "0000": 26,
+    "0001": 40,
+    "0010": 77,
+    "0011": 43,
+    "0100": 36,
+    "0101": 52,
+    "0110": 101,
+    "0111": 106,
+    "1000": 55,
+    "1001": 61,
+    "1010": 132,
+    "1011": 56,
+    "1100": 23,
+    "1101": 35,
+    "1110": 100,
+    "1111": 57
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r2/maxcut_square4_angles_a/g0",
+  "qasm_sha256": "48f6a630353e0753b6e4246cb83adea0ccb96529a7263feda7de56773abb1b63",
+  "round": 2,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

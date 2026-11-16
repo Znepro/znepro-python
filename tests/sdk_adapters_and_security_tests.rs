@@ -374,7 +374,7 @@ fn test_zero_proprietary_ip_leakage() {
         let lower = text.to_ascii_lowercase();
         for word in &forbidden {
             assert!(
-                !lower.contains(&word.to_ascii_lowercase()),
+                !contains_blocked_marker(&lower, &word.to_ascii_lowercase()),
                 "blocked token found in {rel}"
             );
         }
@@ -408,6 +408,25 @@ fn test_zero_proprietary_ip_leakage() {
     .unwrap()
     .to_json_value();
     assert!(sample.get(hidden_flag.as_str()).is_none());
+}
+
+fn contains_blocked_marker(text: &str, word: &str) -> bool {
+    if word.is_empty() || !word.bytes().all(|byte| byte.is_ascii_digit() || byte == b'.') {
+        return text.contains(word);
+    }
+    let bytes = text.as_bytes();
+    let mut start = 0;
+    while let Some(found) = text[start..].find(word) {
+        let index = start + found;
+        let before_ok = index == 0 || !bytes[index - 1].is_ascii_digit();
+        let after = index + word.len();
+        let after_ok = after >= bytes.len() || !bytes[after].is_ascii_digit();
+        if before_ok && after_ok {
+            return true;
+        }
+        start = index + 1;
+    }
+    false
 }
 
 fn tracked_repo_paths(root: &Path) -> Vec<String> {

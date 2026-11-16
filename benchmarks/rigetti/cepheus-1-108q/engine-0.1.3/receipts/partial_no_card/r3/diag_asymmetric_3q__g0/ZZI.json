@@ -1,0 +1,14 @@
+{
+  "arm": "no_card",
+  "calibration_applied": false,
+  "case_id": "diag_asymmetric_3q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r3/diag_asymmetric_3q/g0/ZZI",
+  "mitigated_expectation": 0.4111331110272675,
+  "observable": "ZZI",
+  "round": 3,
+  "status": "COMPLETED",
+  "target_observable": "ZZI",
+  "total_shots": 1000
+}

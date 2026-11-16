@@ -1,0 +1,29 @@
+{
+  "bit_order": "q0_left",
+  "case_id": "diag_negative_zz_4q",
+  "counts": {
+    "0000": 8,
+    "0001": 18,
+    "0010": 9,
+    "0011": 18,
+    "0100": 80,
+    "0101": 128,
+    "0110": 147,
+    "0111": 83,
+    "1000": 68,
+    "1001": 112,
+    "1010": 138,
+    "1011": 97,
+    "1100": 9,
+    "1101": 27,
+    "1110": 24,
+    "1111": 34
+  },
+  "data_type": "real_qpu",
+  "group_id": "g0",
+  "local_id": "r1/diag_negative_zz_4q/g0",
+  "qasm_sha256": "5eda78eba2f52429ea985f3b2e0f283fc012d0f95036864fe6f415d9e88a1791",
+  "round": 1,
+  "shots": 1000,
+  "status": "COMPLETED"
+}

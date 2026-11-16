@@ -1,0 +1,14 @@
+{
+  "arm": "single_run_zero_telemetry",
+  "calibration_applied": false,
+  "case_id": "diag_asymmetric_3q",
+  "engine_version": "0.1.3",
+  "group_id": "g0",
+  "local_id": "r1/diag_asymmetric_3q/g0/ZII",
+  "mitigated_expectation": 0.8550614758523715,
+  "observable": "ZII",
+  "round": 1,
+  "status": "COMPLETED",
+  "target_observable": "ZII",
+  "total_shots": 1000
+}

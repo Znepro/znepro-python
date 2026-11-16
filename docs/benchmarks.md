@@ -34,3 +34,13 @@ python -m unittest benchmarks.braket_case_studies.test_braket_case_studies
 ```
 
 A fresh live pass requires `ZNEPRO_RUN_LIVE=1` and `ZNEPRO_API_KEY`.
+
+## Rigetti Cepheus-1-108Q
+
+The recorded evaluation is `benchmarks/rigetti/cepheus-1-108q/engine-0.1.3/`. The device is Cepheus-1-108Q and the scored arm is `single_run_zero_telemetry` on engine 0.1.3. The hardware plan is 30 cases, three rounds, 162 tasks, and 162,000 shots. The scored denominator is 25 pre-registered cases: 20 of 25 are better than raw in all three rounds, and 21 of 25 have a lower three-round mean absolute error. Two cases are worse than raw in all three rounds: `diag_near_zero_2q` and `ising_6_mag_step1`.
+
+The partial-card appendix is separate: 4 circuits, 10 case-rounds, and 84 receipts, with 5 comparisons better than the no-card replay and 5 worse. Rebuild the tables from the stored counts and receipts, with no network and no credential:
+
+```bash
+python3 benchmarks/rigetti/cepheus-1-108q/engine-0.1.3/reproduce.py
+```
